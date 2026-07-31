@@ -80,7 +80,22 @@ Points à durcir avant la mise en ligne :
   `ports:` correspondants de `docker-compose.yml`, y accéder par tunnel SSH) ;
 - compléter `app/(site)/mentions-legales` et `app/(site)/confidentialite` avec
   les informations réelles (éditeur, hébergeur, SIRET, durées de conservation) ;
-- ajuster les tarifs de base dans `lib/prix.ts` et les coordonnées dans `lib/site.ts`.
+- ajuster les coordonnées dans `lib/site.ts`.
+
+## Tarifs
+
+La grille tarifaire se modifie depuis `/admin/tarifs` : prix de base par matière,
+coefficient par qualité et paliers de remise quantité. La page affiche une
+simulation recalculée en direct pendant la saisie.
+
+Les valeurs vivent en base (`TarifMatiere`, `TarifQualite`, `RemiseQuantite`).
+Tant qu'une valeur n'a pas été saisie, c'est `GRILLE_DEFAUT` de `lib/prix.ts` qui
+s'applique — le site fonctionne donc sans configuration préalable, et la base
+reste facultative pour l'affichage.
+
+Le prix estimé est toujours recalculé côté serveur à la création du devis : la
+valeur affichée dans le configurateur n'est jamais reprise telle quelle. Modifier
+la grille n'a aucun effet sur les devis déjà enregistrés.
 
 ## Ce qui reste à faire
 

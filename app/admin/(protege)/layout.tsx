@@ -30,6 +30,12 @@ export default async function AdminLayout({
               >
                 Réalisations
               </Link>
+              <Link
+                href="/admin/tarifs"
+                className="text-muted transition-colors hover:text-text"
+              >
+                Tarifs
+              </Link>
               <Link href="/" className="text-muted transition-colors hover:text-text">
                 Voir le site
               </Link>

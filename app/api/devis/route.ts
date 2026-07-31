@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { devisSchema, premiereErreur } from "@/lib/validation";
 import { estimerPrix } from "@/lib/prix";
+import { chargerGrille } from "@/lib/tarifs";
 import { genererToken } from "@/lib/tokens";
 import { envoyerConfirmationClient, envoyerNotificationAdmin } from "@/lib/emails";
 import { ipDepuisRequete, limiter } from "@/lib/rate-limit";
@@ -44,15 +45,22 @@ export async function POST(request: Request) {
   }
 
   try {
+    // Le prix est toujours recalculé côté serveur : la valeur affichée au client
+    // n'est jamais reprise telle quelle.
+    const grille = await chargerGrille();
+
     const devis = await prisma.devis.create({
       data: {
         ...donnees,
         token: genererToken(),
-        prixEstime: estimerPrix({
-          matiere: donnees.matiere,
-          qualite: donnees.qualite,
-          quantite: donnees.quantite,
-        }),
+        prixEstime: estimerPrix(
+          {
+            matiere: donnees.matiere,
+            qualite: donnees.qualite,
+            quantite: donnees.quantite,
+          },
+          grille,
+        ),
         evenements: {
           create: { statut: "RECU", commentaire: "Demande reçue via le site" },
         },

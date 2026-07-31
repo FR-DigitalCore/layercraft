@@ -6,10 +6,12 @@ import { useMemo, useRef, useState, type DragEvent } from "react";
 import {
   estimerPrix,
   formatPrix,
+  GRILLE_DEFAUT,
   MATIERE_INFOS,
   MATIERES,
   QUALITE_INFOS,
   QUALITES,
+  type GrilleTarifaire,
   type Matiere,
   type Qualite,
 } from "@/lib/prix";
@@ -30,7 +32,12 @@ type Fichier = { key: string; url: string; nom: string; taille: number };
 
 const ETAPES = ["Votre fichier", "Configuration", "Contact"] as const;
 
-export function DevisForm() {
+export function DevisForm({
+  grille = GRILLE_DEFAUT,
+}: {
+  /** Grille tarifaire courante, chargée côté serveur depuis /admin/tarifs. */
+  grille?: GrilleTarifaire;
+}) {
   const router = useRouter();
   const params = useSearchParams();
   const matiereInitiale = params.get("matiere");
@@ -61,8 +68,8 @@ export function DevisForm() {
   const [website, setWebsite] = useState(""); // honeypot
 
   const estimation = useMemo(
-    () => estimerPrix({ matiere, qualite, quantite }),
-    [matiere, qualite, quantite],
+    () => estimerPrix({ matiere, qualite, quantite }, grille),
+    [matiere, qualite, quantite, grille],
   );
 
   async function televerser(f: File) {

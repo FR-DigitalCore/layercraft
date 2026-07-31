@@ -24,6 +24,7 @@ export const authConfig = {
         "/admin",
         "/api/commandes",
         "/api/realisations",
+        "/api/tarifs",
         "/api/upload/image",
       ];
       if (zonesProtegees.some((zone) => chemin.startsWith(zone))) {

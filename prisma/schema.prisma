@@ -63,6 +63,27 @@ enum Statut {
   ANNULE
 }
 
+/// Grille tarifaire éditable depuis /admin/tarifs.
+/// Table vide = valeurs par défaut de lib/prix.ts (GRILLE_DEFAUT).
+model TarifMatiere {
+  matiere   String   @id // PLA, PETG, ASA, TPU
+  prixBase  Float // euros HT pour une pièce en qualité standard
+  updatedAt DateTime @updatedAt
+}
+
+model TarifQualite {
+  qualite        String   @id // draft | standard | fine
+  multiplicateur Float
+  updatedAt      DateTime @updatedAt
+}
+
+model RemiseQuantite {
+  id          String   @id @default(cuid())
+  seuil       Int      @unique // à partir de N pièces
+  coefficient Float // 0.85 = -15 %
+  updatedAt   DateTime @updatedAt
+}
+
 model Realisation {
   id          String   @id @default(cuid())
   createdAt   DateTime @default(now())

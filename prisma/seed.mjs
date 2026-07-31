@@ -48,7 +48,37 @@ const REALISATIONS = [
   },
 ];
 
+const TARIFS_MATIERE = { PLA: 8, PETG: 10, ASA: 12, TPU: 14 };
+const TARIFS_QUALITE = { draft: 0.8, standard: 1, fine: 1.4 };
+const REMISES = [
+  { seuil: 3, coefficient: 0.92 },
+  { seuil: 5, coefficient: 0.85 },
+];
+
 async function main() {
+  // Grille tarifaire de départ, ensuite modifiable depuis /admin/tarifs.
+  for (const [matiere, prixBase] of Object.entries(TARIFS_MATIERE)) {
+    await prisma.tarifMatiere.upsert({
+      where: { matiere },
+      create: { matiere, prixBase },
+      update: {},
+    });
+  }
+  for (const [qualite, multiplicateur] of Object.entries(TARIFS_QUALITE)) {
+    await prisma.tarifQualite.upsert({
+      where: { qualite },
+      create: { qualite, multiplicateur },
+      update: {},
+    });
+  }
+  for (const remise of REMISES) {
+    await prisma.remiseQuantite.upsert({
+      where: { seuil: remise.seuil },
+      create: remise,
+      update: {},
+    });
+  }
+
   for (const realisation of REALISATIONS) {
     const existante = await prisma.realisation.findFirst({
       where: { imageKey: realisation.imageKey },

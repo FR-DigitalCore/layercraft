@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { DevisForm } from "@/components/DevisForm";
 import { TitreSection } from "@/components/ui/Card";
+import { chargerGrille } from "@/lib/tarifs";
 
 export const metadata: Metadata = {
   title: "Demander un devis",
@@ -10,7 +11,12 @@ export const metadata: Metadata = {
   alternates: { canonical: "/devis" },
 };
 
-export default function DevisPage() {
+// Régénérée à l'enregistrement d'une nouvelle grille (revalidatePath dans /api/tarifs).
+export const revalidate = 3600;
+
+export default async function DevisPage() {
+  const grille = await chargerGrille();
+
   return (
     <div className="conteneur py-16">
       <TitreSection
@@ -23,7 +29,7 @@ export default function DevisPage() {
           <div className="mt-10 h-96 animate-pulse rounded-xl border border-border bg-surface" />
         }
       >
-        <DevisForm />
+        <DevisForm grille={grille} />
       </Suspense>
     </div>
   );

@@ -56,6 +56,24 @@ export const majCommandeSchema = z
     message: "Aucun champ à mettre à jour",
   });
 
+export const grilleTarifaireSchema = z
+  .object({
+    matieres: z.record(z.enum(MATIERES), z.coerce.number().min(0).max(10_000)),
+    qualites: z.record(z.enum(QUALITES), z.coerce.number().min(0.05).max(20)),
+    remises: z
+      .array(
+        z.object({
+          seuil: z.coerce.number().int().min(2).max(10_000),
+          coefficient: z.coerce.number().min(0.05).max(1),
+        }),
+      )
+      .max(10),
+  })
+  .refine(
+    (grille) => new Set(grille.remises.map((r) => r.seuil)).size === grille.remises.length,
+    { message: "Deux paliers de remise ont le même seuil.", path: ["remises"] },
+  );
+
 export const realisationSchema = z.object({
   titre: z.string().trim().min(2).max(140),
   description: z.string().trim().max(2000).optional().or(z.literal("")),

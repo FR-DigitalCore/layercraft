@@ -54,15 +54,47 @@ export const QUALITE_INFOS: Record<
   },
 };
 
-export function estimerPrix(config: {
-  matiere: Matiere;
-  qualite: Qualite;
-  quantite: number;
-}): number {
-  const BASE = { PLA: 8, PETG: 10, ASA: 12, TPU: 14 };
-  const QUALITE_MULT = { draft: 0.8, standard: 1, fine: 1.4 };
-  const base = BASE[config.matiere] * QUALITE_MULT[config.qualite];
-  const remise = config.quantite >= 5 ? 0.85 : config.quantite >= 3 ? 0.92 : 1;
+/** Palier de remise : à partir de `seuil` pièces, on applique `coefficient`. */
+export type Remise = { seuil: number; coefficient: number };
+
+export type GrilleTarifaire = {
+  matieres: Record<Matiere, number>;
+  qualites: Record<Qualite, number>;
+  remises: Remise[];
+};
+
+/**
+ * Grille utilisée tant que rien n'a été saisi dans /admin/tarifs,
+ * et en repli si la base n'est pas joignable.
+ */
+export const GRILLE_DEFAUT: GrilleTarifaire = {
+  matieres: { PLA: 8, PETG: 10, ASA: 12, TPU: 14 },
+  qualites: { draft: 0.8, standard: 1, fine: 1.4 },
+  remises: [
+    { seuil: 3, coefficient: 0.92 },
+    { seuil: 5, coefficient: 0.85 },
+  ],
+};
+
+/** Coefficient du palier le plus avantageux atteint par la quantité. */
+export function remiseApplicable(remises: Remise[], quantite: number): number {
+  return remises
+    .filter((r) => quantite >= r.seuil)
+    .reduce((meilleur, r) => Math.min(meilleur, r.coefficient), 1);
+}
+
+export function estimerPrix(
+  config: {
+    matiere: Matiere;
+    qualite: Qualite;
+    quantite: number;
+  },
+  grille: GrilleTarifaire = GRILLE_DEFAUT,
+): number {
+  const base =
+    (grille.matieres[config.matiere] ?? GRILLE_DEFAUT.matieres[config.matiere]) *
+    (grille.qualites[config.qualite] ?? GRILLE_DEFAUT.qualites[config.qualite]);
+  const remise = remiseApplicable(grille.remises, config.quantite);
   return Math.round(base * config.quantite * remise * 100) / 100;
 }
 

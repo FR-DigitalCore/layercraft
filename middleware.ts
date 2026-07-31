@@ -10,6 +10,7 @@ export const config = {
     "/admin/:path*",
     "/api/commandes/:path*",
     "/api/realisations/:path*",
+    "/api/tarifs",
     "/api/upload/image",
   ],
 };
