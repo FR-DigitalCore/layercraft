@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { BUCKET_STL, envoyerFichier, urlSignee } from "@/lib/minio";
 import { genererCleFichier } from "@/lib/tokens";
-import { estStlValide, extensionAutorisee, TAILLE_MAX_STL } from "@/lib/stl";
+import {
+  calculerVolumeCm3,
+  estStlValide,
+  extensionAutorisee,
+  TAILLE_MAX_STL,
+} from "@/lib/stl";
 import { ipDepuisRequete, limiter } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
@@ -64,6 +69,9 @@ export async function POST(request: Request) {
       url,
       nom: fichier.name,
       taille: fichier.size,
+      // Sert à l'estimation affichée en direct ; le serveur le recalcule à la
+      // création du devis, la valeur renvoyée ici n'est jamais reprise en base.
+      volumeCm3: calculerVolumeCm3(buffer),
     });
   } catch (erreur) {
     console.error("[upload] échec MinIO", erreur);

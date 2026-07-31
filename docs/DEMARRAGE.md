@@ -84,18 +84,44 @@ Points à durcir avant la mise en ligne :
 
 ## Tarifs
 
-La grille tarifaire se modifie depuis `/admin/tarifs` : prix de base par matière,
-coefficient par qualité et paliers de remise quantité. La page affiche une
-simulation recalculée en direct pendant la saisie.
+Tout se règle depuis `/admin/tarifs`, y compris le **modèle de calcul** :
 
-Les valeurs vivent en base (`TarifMatiere`, `TarifQualite`, `RemiseQuantite`).
-Tant qu'une valeur n'a pas été saisie, c'est `GRILLE_DEFAUT` de `lib/prix.ts` qui
-s'applique — le site fonctionne donc sans configuration préalable, et la base
-reste facultative pour l'affichage.
+| Mode | Formule | Volume du STL |
+|---|---|---|
+| `FORFAIT` | prix de base × coef. qualité × quantité × remise | non utilisé |
+| `MATIERE` | (mise en route + masse × prix/g × coef. qualité) × quantité × remise | requis |
+| `MATIERE_TEMPS` | (mise en route + masse × prix/g + heures × prix horaire) × quantité × remise | requis |
 
-Le prix estimé est toujours recalculé côté serveur à la création du devis : la
-valeur affichée dans le configurateur n'est jamais reprise telle quelle. Modifier
-la grille n'a aucun effet sur les devis déjà enregistrés.
+Le simulateur affiche les trois modèles côte à côte sur une même pièce
+(matière, qualité, volume, quantité réglables) et se recalcule en direct.
+Rien n'est appliqué tant que « Enregistrer la grille » n'a pas été cliqué.
+
+Les valeurs vivent en base (`TarifMatiere`, `TarifQualite`, `RemiseQuantite`,
+`ParametresTarification`). Tant qu'une valeur n'a pas été saisie, c'est
+`GRILLE_DEFAUT` de `lib/prix.ts` qui s'applique, champ par champ — le site
+fonctionne donc sans configuration préalable.
+
+**Les chiffres par défaut sont des placeholders**, à recaler sur les coûts réels
+(prix au gramme, densités, prix horaire machine, mise en route).
+
+### Volume et masse
+
+Le volume est mesuré sur le maillage à l'upload (somme des volumes signés des
+tétraèdres) et **recalculé côté serveur** à la création du devis : la valeur
+envoyée par le navigateur n'est jamais reprise en base.
+
+Deux limites à connaître :
+
+- seuls les **STL binaires** sont mesurés ; un STL ASCII renvoie un volume nul
+  et retombe sur `volumeParDefaut` ;
+- la masse part du volume brut × taux de remplissage, avec un plancher à 35 %
+  (parois et couches pleines consomment de la matière quel que soit l'infill).
+  Ce n'est pas un slicer : comptez un écart de l'ordre de 10 à 20 %.
+
+Le temps machine du mode `MATIERE_TEMPS` est déduit du débit en cm³/h réglé par
+qualité — approximation volontairement simple, à calibrer sur vos temps réels.
+
+Modifier la grille n'a aucun effet sur les devis déjà enregistrés.
 
 ## Ce qui reste à faire
 

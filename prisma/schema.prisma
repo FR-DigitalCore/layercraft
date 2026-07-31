@@ -29,6 +29,9 @@ model Devis {
   stlKey String? // clé MinIO
   stlNom String?
 
+  /// Volume de matière mesuré sur le STL, en cm³ (null si aucun fichier).
+  volumeCm3 Float?
+
   // Suivi
   statut     Statut  @default(RECU)
   prixEstime Float?
@@ -66,15 +69,29 @@ enum Statut {
 /// Grille tarifaire éditable depuis /admin/tarifs.
 /// Table vide = valeurs par défaut de lib/prix.ts (GRILLE_DEFAUT).
 model TarifMatiere {
-  matiere   String   @id // PLA, PETG, ASA, TPU
-  prixBase  Float // euros HT pour une pièce en qualité standard
-  updatedAt DateTime @updatedAt
+  matiere        String   @id // PLA, PETG, ASA, TPU
+  prixBase       Float // mode FORFAIT : euros HT par pièce, qualité standard
+  prixParGramme  Float    @default(0.08) // modes MATIERE et MATIERE_TEMPS
+  densite        Float    @default(1.24) // g/cm³, pour convertir le volume en masse
+  updatedAt      DateTime @updatedAt
 }
 
 model TarifQualite {
-  qualite        String   @id // draft | standard | fine
-  multiplicateur Float
-  updatedAt      DateTime @updatedAt
+  qualite          String   @id // draft | standard | fine
+  multiplicateur   Float // mode FORFAIT
+  debitCm3ParHeure Float    @default(8) // mode MATIERE_TEMPS : vitesse d'impression
+  updatedAt        DateTime @updatedAt
+}
+
+/// Ligne unique (id = "global") : mode de calcul actif et paramètres transverses.
+model ParametresTarification {
+  id               String   @id @default("global")
+  mode             String   @default("FORFAIT") // FORFAIT | MATIERE | MATIERE_TEMPS
+  fraisMiseEnRoute Float    @default(5) // forfait fixe par commande
+  prixHoraire      Float    @default(4) // euros HT par heure machine
+  tauxRemplissage  Float    @default(0.25) // 0,25 = 25 % d'infill
+  volumeParDefaut  Float    @default(30) // cm³ retenus quand aucun STL n'est fourni
+  updatedAt        DateTime @updatedAt
 }
 
 model RemiseQuantite {

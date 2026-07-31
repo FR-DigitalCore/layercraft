@@ -48,8 +48,17 @@ const REALISATIONS = [
   },
 ];
 
-const TARIFS_MATIERE = { PLA: 8, PETG: 10, ASA: 12, TPU: 14 };
-const TARIFS_QUALITE = { draft: 0.8, standard: 1, fine: 1.4 };
+const TARIFS_MATIERE = {
+  PLA: { prixBase: 8, prixParGramme: 0.06, densite: 1.24 },
+  PETG: { prixBase: 10, prixParGramme: 0.07, densite: 1.27 },
+  ASA: { prixBase: 12, prixParGramme: 0.09, densite: 1.07 },
+  TPU: { prixBase: 14, prixParGramme: 0.12, densite: 1.21 },
+};
+const TARIFS_QUALITE = {
+  draft: { multiplicateur: 0.8, debitCm3ParHeure: 12 },
+  standard: { multiplicateur: 1, debitCm3ParHeure: 8 },
+  fine: { multiplicateur: 1.4, debitCm3ParHeure: 4 },
+};
 const REMISES = [
   { seuil: 3, coefficient: 0.92 },
   { seuil: 5, coefficient: 0.85 },
@@ -57,17 +66,22 @@ const REMISES = [
 
 async function main() {
   // Grille tarifaire de départ, ensuite modifiable depuis /admin/tarifs.
-  for (const [matiere, prixBase] of Object.entries(TARIFS_MATIERE)) {
+  await prisma.parametresTarification.upsert({
+    where: { id: "global" },
+    create: { id: "global" },
+    update: {},
+  });
+  for (const [matiere, tarif] of Object.entries(TARIFS_MATIERE)) {
     await prisma.tarifMatiere.upsert({
       where: { matiere },
-      create: { matiere, prixBase },
+      create: { matiere, ...tarif },
       update: {},
     });
   }
-  for (const [qualite, multiplicateur] of Object.entries(TARIFS_QUALITE)) {
+  for (const [qualite, tarif] of Object.entries(TARIFS_QUALITE)) {
     await prisma.tarifQualite.upsert({
       where: { qualite },
-      create: { qualite, multiplicateur },
+      create: { qualite, ...tarif },
       update: {},
     });
   }

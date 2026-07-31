@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useRef, useState, type DragEvent } from "react";
 import {
-  estimerPrix,
+  detaillerPrix,
   formatPrix,
   GRILLE_DEFAUT,
   MATIERE_INFOS,
@@ -28,7 +28,13 @@ const StlViewer = dynamic(() => import("@/components/StlViewer"), {
   ),
 });
 
-type Fichier = { key: string; url: string; nom: string; taille: number };
+type Fichier = {
+  key: string;
+  url: string;
+  nom: string;
+  taille: number;
+  volumeCm3: number | null;
+};
 
 const ETAPES = ["Votre fichier", "Configuration", "Contact"] as const;
 
@@ -67,9 +73,13 @@ export function DevisForm({
   const [message, setMessage] = useState("");
   const [website, setWebsite] = useState(""); // honeypot
 
-  const estimation = useMemo(
-    () => estimerPrix({ matiere, qualite, quantite }, grille),
-    [matiere, qualite, quantite, grille],
+  const detail = useMemo(
+    () =>
+      detaillerPrix(
+        { matiere, qualite, quantite, volumeCm3: fichier?.volumeCm3 },
+        grille,
+      ),
+    [matiere, qualite, quantite, fichier?.volumeCm3, grille],
   );
 
   async function televerser(f: File) {
@@ -91,7 +101,13 @@ export function DevisForm({
       const reponse = await fetch("/api/upload", { method: "POST", body: donnees });
       const corps = await reponse.json();
       if (!reponse.ok) throw new Error(corps.erreur ?? "Envoi impossible.");
-      setFichier({ key: corps.key, url: corps.url, nom: corps.nom, taille: corps.taille });
+      setFichier({
+        key: corps.key,
+        url: corps.url,
+        nom: corps.nom,
+        taille: corps.taille,
+        volumeCm3: corps.volumeCm3 ?? null,
+      });
     } catch (e) {
       setErreur(e instanceof Error ? e.message : "Envoi impossible.");
     } finally {
@@ -228,7 +244,10 @@ export function DevisForm({
                 <div className="flex items-center justify-between rounded-lg border border-border bg-surface px-4 py-3 text-sm">
                   <span className="truncate">
                     <strong className="font-medium">{fichier.nom}</strong>
-                    <span className="ml-2 text-muted">{formatTaille(fichier.taille)}</span>
+                    <span className="ml-2 text-muted">
+                      {formatTaille(fichier.taille)}
+                      {fichier.volumeCm3 !== null && ` · ${fichier.volumeCm3} cm³`}
+                    </span>
                   </span>
                   <button
                     type="button"
@@ -498,16 +517,38 @@ export function DevisForm({
           />
           <LigneRecap label="Couleur" valeur={couleur || "À définir"} />
           <LigneRecap label="Quantité" valeur={String(quantite)} />
+          {grille.mode !== "FORFAIT" && (
+            <>
+              <LigneRecap
+                label="Volume"
+                valeur={
+                  fichier?.volumeCm3
+                    ? `${fichier.volumeCm3} cm³`
+                    : `≈ ${grille.volumeParDefaut} cm³`
+                }
+              />
+              {detail.masseG !== null && (
+                <LigneRecap label="Matière" valeur={`≈ ${detail.masseG} g`} />
+              )}
+              {detail.heures !== null && (
+                <LigneRecap
+                  label="Temps machine"
+                  valeur={`≈ ${detail.heures.toFixed(1)} h`}
+                />
+              )}
+            </>
+          )}
         </dl>
 
         <div className="mt-5 border-t border-border pt-5">
           <p className="text-xs text-muted">Estimation indicative</p>
           <p className="font-display mt-1 text-3xl font-bold text-accent">
-            {formatPrix(estimation)}
+            {formatPrix(detail.total)}
           </p>
           <p className="mt-3 text-xs leading-relaxed text-muted">
-            Prix HT non contractuel : il ne tient pas compte du volume réel de la pièce
-            ni du temps machine. Le devis ferme vous est envoyé sous 24 à 48 h.
+            {detail.volumeEstime
+              ? "Prix HT non contractuel, calculé sur un volume moyen faute de fichier 3D. Joignez un STL pour une estimation nettement plus juste."
+              : "Prix HT non contractuel : le devis ferme vous est envoyé sous 24 à 48 h après examen de la pièce."}
           </p>
         </div>
       </aside>

@@ -89,6 +89,16 @@ export default async function AdminCommandePage({
               />
               <Ligne label="Couleur" valeur={devis.couleur ?? "À définir"} />
               <Ligne label="Quantité" valeur={String(devis.quantite)} />
+              <Ligne
+                label="Volume mesuré"
+                valeur={
+                  devis.volumeCm3 !== null ? (
+                    `${devis.volumeCm3} cm³`
+                  ) : (
+                    <span className="text-muted">Non mesuré</span>
+                  )
+                }
+              />
               <Ligne label="Estimation auto" valeur={formatPrix(devis.prixEstime)} />
               <Ligne
                 label="Fichier STL"

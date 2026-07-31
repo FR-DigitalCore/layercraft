@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { Statut } from "@prisma/client";
-import { MATIERES, QUALITES } from "@/lib/prix";
+import { MATIERES, MODES, QUALITES } from "@/lib/prix";
 
 export const devisSchema = z
   .object({
@@ -58,8 +58,26 @@ export const majCommandeSchema = z
 
 export const grilleTarifaireSchema = z
   .object({
-    matieres: z.record(z.enum(MATIERES), z.coerce.number().min(0).max(10_000)),
-    qualites: z.record(z.enum(QUALITES), z.coerce.number().min(0.05).max(20)),
+    mode: z.enum(MODES),
+    matieres: z.record(
+      z.enum(MATIERES),
+      z.object({
+        prixBase: z.coerce.number().min(0).max(10_000),
+        prixParGramme: z.coerce.number().min(0).max(100),
+        densite: z.coerce.number().min(0.1).max(10),
+      }),
+    ),
+    qualites: z.record(
+      z.enum(QUALITES),
+      z.object({
+        multiplicateur: z.coerce.number().min(0.05).max(20),
+        debitCm3ParHeure: z.coerce.number().min(0.1).max(1_000),
+      }),
+    ),
+    fraisMiseEnRoute: z.coerce.number().min(0).max(10_000),
+    prixHoraire: z.coerce.number().min(0).max(10_000),
+    tauxRemplissage: z.coerce.number().min(0.01).max(1),
+    volumeParDefaut: z.coerce.number().min(0.1).max(100_000),
     remises: z
       .array(
         z.object({

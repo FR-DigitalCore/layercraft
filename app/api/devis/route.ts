@@ -3,11 +3,27 @@ import { prisma } from "@/lib/prisma";
 import { devisSchema, premiereErreur } from "@/lib/validation";
 import { estimerPrix } from "@/lib/prix";
 import { chargerGrille } from "@/lib/tarifs";
+import { BUCKET_STL, lireFichier } from "@/lib/minio";
+import { calculerVolumeCm3 } from "@/lib/stl";
 import { genererToken } from "@/lib/tokens";
 import { envoyerConfirmationClient, envoyerNotificationAdmin } from "@/lib/emails";
 import { ipDepuisRequete, limiter } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
+
+/**
+ * Relit le STL depuis MinIO pour en mesurer le volume. Un échec n'est pas
+ * bloquant : le devis part sans volume, la tarification retombe alors sur le
+ * volume par défaut de la grille.
+ */
+async function mesurerVolume(stlKey: string): Promise<number | null> {
+  try {
+    return calculerVolumeCm3(await lireFichier(BUCKET_STL, stlKey));
+  } catch (erreur) {
+    console.error("[devis] mesure du volume impossible", erreur);
+    return null;
+  }
+}
 
 export async function POST(request: Request) {
   const { autorise, resteSecondes } = limiter(
@@ -45,19 +61,22 @@ export async function POST(request: Request) {
   }
 
   try {
-    // Le prix est toujours recalculé côté serveur : la valeur affichée au client
-    // n'est jamais reprise telle quelle.
+    // Prix et volume sont toujours recalculés côté serveur : les valeurs
+    // affichées au client ne sont jamais reprises telles quelles.
     const grille = await chargerGrille();
+    const volumeCm3 = donnees.stlKey ? await mesurerVolume(donnees.stlKey) : null;
 
     const devis = await prisma.devis.create({
       data: {
         ...donnees,
         token: genererToken(),
+        volumeCm3,
         prixEstime: estimerPrix(
           {
             matiere: donnees.matiere,
             qualite: donnees.qualite,
             quantite: donnees.quantite,
+            volumeCm3,
           },
           grille,
         ),

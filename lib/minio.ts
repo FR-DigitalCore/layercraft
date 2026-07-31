@@ -36,6 +36,15 @@ export async function envoyerFichier(
   });
 }
 
+export async function lireFichier(bucket: string, cle: string): Promise<Buffer> {
+  const flux = await minio.getObject(bucket, cle);
+  const morceaux: Buffer[] = [];
+  for await (const morceau of flux) {
+    morceaux.push(morceau as Buffer);
+  }
+  return Buffer.concat(morceaux);
+}
+
 /** URL temporaire de téléchargement (1 h par défaut). */
 export async function urlSignee(
   bucket: string,
