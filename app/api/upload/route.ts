@@ -1,0 +1,75 @@
+import { NextResponse } from "next/server";
+import { BUCKET_STL, envoyerFichier, urlSignee } from "@/lib/minio";
+import { genererCleFichier } from "@/lib/tokens";
+import { estStlValide, extensionAutorisee, TAILLE_MAX_STL } from "@/lib/stl";
+import { ipDepuisRequete, limiter } from "@/lib/rate-limit";
+
+export const runtime = "nodejs";
+
+export async function POST(request: Request) {
+  const { autorise, resteSecondes } = limiter(
+    `upload:${ipDepuisRequete(request)}`,
+    20,
+    10 * 60_000,
+  );
+  if (!autorise) {
+    return NextResponse.json(
+      { erreur: "Trop d'envois de fichiers. Réessayez dans quelques minutes." },
+      { status: 429, headers: { "Retry-After": String(resteSecondes) } },
+    );
+  }
+
+  let formData: FormData;
+  try {
+    formData = await request.formData();
+  } catch {
+    return NextResponse.json({ erreur: "Requête invalide." }, { status: 400 });
+  }
+
+  const fichier = formData.get("file");
+  if (!(fichier instanceof File)) {
+    return NextResponse.json({ erreur: "Aucun fichier reçu." }, { status: 400 });
+  }
+
+  if (!extensionAutorisee(fichier.name)) {
+    return NextResponse.json(
+      { erreur: "Format non supporté : seuls les fichiers .stl sont acceptés." },
+      { status: 400 },
+    );
+  }
+
+  if (fichier.size > TAILLE_MAX_STL) {
+    return NextResponse.json(
+      { erreur: "Fichier trop volumineux (50 Mo maximum)." },
+      { status: 413 },
+    );
+  }
+
+  const buffer = Buffer.from(await fichier.arrayBuffer());
+
+  if (!estStlValide(buffer)) {
+    return NextResponse.json(
+      { erreur: "Ce fichier ne ressemble pas à un STL valide." },
+      { status: 400 },
+    );
+  }
+
+  const cle = genererCleFichier("stl", fichier.name);
+
+  try {
+    await envoyerFichier(BUCKET_STL, cle, buffer, "model/stl");
+    const url = await urlSignee(BUCKET_STL, cle, 3600);
+    return NextResponse.json({
+      key: cle,
+      url,
+      nom: fichier.name,
+      taille: fichier.size,
+    });
+  } catch (erreur) {
+    console.error("[upload] échec MinIO", erreur);
+    return NextResponse.json(
+      { erreur: "Le stockage du fichier a échoué. Réessayez dans un instant." },
+      { status: 502 },
+    );
+  }
+}

@@ -1,0 +1,78 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Devis {
+  id        String   @id @default(cuid())
+  token     String   @unique @default(cuid()) // pour URL suivi public
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Contact
+  nom       String
+  email     String
+  telephone String?
+  message   String?
+
+  // Config impression
+  matiere  String // PLA, PETG, ASA, TPU
+  couleur  String?
+  qualite  String // draft | standard | fine
+  quantite Int     @default(1)
+
+  // Fichier
+  stlKey String? // clé MinIO
+  stlNom String?
+
+  // Suivi
+  statut     Statut  @default(RECU)
+  prixEstime Float?
+  prixFinal  Float?
+  noteAdmin  String?
+
+  evenements EvenementDevis[]
+
+  @@index([email])
+  @@index([statut])
+}
+
+/// Historique des changements de statut, utilisé par la timeline de /suivi/[token]
+model EvenementDevis {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  devisId   String
+  devis     Devis    @relation(fields: [devisId], references: [id], onDelete: Cascade)
+  statut    Statut
+  commentaire String?
+
+  @@index([devisId])
+}
+
+enum Statut {
+  RECU
+  EN_ETUDE
+  ACCEPTE
+  EN_IMPRESSION
+  TERMINE
+  EXPEDIE
+  ANNULE
+}
+
+model Realisation {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  titre       String
+  description String?
+  imageKey    String // clé MinIO
+  matiere     String?
+  tags        String[] // ex: ["pièce technique", "PETG"]
+  visible     Boolean  @default(true)
+  ordre       Int      @default(0)
+
+  @@index([visible, ordre])
+}
