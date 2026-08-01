@@ -62,16 +62,23 @@ export default function StlViewer({ url }: { url: string }) {
         });
         scene.add(new THREE.Mesh(geo, materiau));
 
-        // Cadrage automatique sur la boîte englobante
+        // Cadrage automatique. On vise la sphère englobante, pas la boîte :
+        // vue de trois quarts, c'est la diagonale qui déborde, et le conteneur
+        // est plus large que haut, donc c'est parfois le FOV horizontal qui
+        // contraint. La marge évite que la pièce touche les bords.
         geo.computeBoundingBox();
-        const boite = geo.boundingBox!;
-        const taille = boite.getSize(new THREE.Vector3());
-        const plusGrand = Math.max(taille.x, taille.y, taille.z) || 1;
-        const distance = plusGrand / (2 * Math.tan((Math.PI * camera.fov) / 360));
+        geo.computeBoundingSphere();
+        const taille = geo.boundingBox!.getSize(new THREE.Vector3());
+        const rayon = geo.boundingSphere?.radius || 1;
 
-        camera.position.set(distance * 0.9, distance * 0.7, distance * 1.1);
-        camera.near = plusGrand / 100;
-        camera.far = plusGrand * 100;
+        const fovVertical = (camera.fov * Math.PI) / 180;
+        const fovHorizontal = 2 * Math.atan(Math.tan(fovVertical / 2) * camera.aspect);
+        const distance = (1.3 * rayon) / Math.sin(Math.min(fovVertical, fovHorizontal) / 2);
+
+        const direction = new THREE.Vector3(0.8, 0.55, 1).normalize();
+        camera.position.copy(direction.multiplyScalar(distance));
+        camera.near = Math.max(0.01, rayon / 100);
+        camera.far = distance + rayon * 10;
         camera.updateProjectionMatrix();
         controls.target.set(0, 0, 0);
         controls.update();
