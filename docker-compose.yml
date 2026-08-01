@@ -1,23 +1,45 @@
 services:
   app:
-    build: .
+    build:
+      context: .
+      args:
+        # Figée dans le bundle client au build : doit valoir le domaine public.
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
     restart: unless-stopped
     env_file: .env
     environment:
       # Dans le réseau Compose, les services se joignent par leur nom
       DATABASE_URL: postgresql://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD:-password}@postgres:5432/${POSTGRES_DB:-impression3d}
       MINIO_ENDPOINT: minio
+      MINIO_PORT: "9000"
+      MINIO_USE_SSL: "false"
     ports:
-      - "3000:3000"
+      # Seul Nginx doit joindre l'app : on n'écoute que sur la boucle locale.
+      - "127.0.0.1:3000:3000"
     depends_on:
       postgres:
         condition: service_healthy
       minio:
         condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
 
   # Migrations : `docker compose run --rm migrate`
   migrate:
-    build: .
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
     env_file: .env
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD:-password}@postgres:5432/${POSTGRES_DB:-impression3d}
@@ -37,7 +59,8 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      # Jamais exposé publiquement : accès par tunnel SSH si besoin.
+      - "127.0.0.1:5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-user} -d ${POSTGRES_DB:-impression3d}"]
       interval: 5s
@@ -51,16 +74,22 @@ services:
     environment:
       MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
       MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
+      # Redirige la console vers le domaine public s'il est configuré.
+      MINIO_BROWSER_REDIRECT_URL: ${MINIO_CONSOLE_URL:-}
     volumes:
       - miniodata:/data
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      # L'API (9000) est publiée sur la boucle locale et exposée au navigateur
+      # par Nginx : les presigned URLs sont signées sur le domaine public.
+      - "127.0.0.1:9000:9000"
+      # La console d'administration reste strictement locale.
+      - "127.0.0.1:9001:9001"
     healthcheck:
       test: ["CMD", "mc", "ready", "local"]
-      interval: 5s
+      interval: 10s
       timeout: 5s
-      retries: 10
+      retries: 12
+      start_period: 15s
 
 volumes:
   pgdata:

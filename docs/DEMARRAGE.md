@@ -59,28 +59,81 @@ galerie affiche alors le visuel de repli. Téléversez de vraies photos depuis
 
 ## Déploiement VPS
 
+Deux domaines sont nécessaires : l'application et un sous-domaine pour les
+fichiers. Les presigned URLs sont signées sur le domaine public et la signature
+couvre l'en-tête `Host` — sans ce sous-domaine, les aperçus STL et les images
+de la galerie ne se chargent pas.
+
 ```bash
 # Sur le serveur, dans le dossier du projet
-cp .env.example .env             # puis renseigner les valeurs de production
-#   NEXTAUTH_URL et NEXT_PUBLIC_SITE_URL doivent pointer sur le domaine public
-#   MINIO_ENDPOINT est surchargé à "minio" par docker-compose
+cp .env.example .env
+```
 
+À renseigner impérativement dans `.env` :
+
+| Variable | Valeur |
+|---|---|
+| `NEXTAUTH_URL`, `NEXT_PUBLIC_SITE_URL` | `https://votredomaine.fr` |
+| `NEXTAUTH_SECRET` | `openssl rand -base64 32` |
+| `ADMIN_EMAIL`, `ADMIN_PASSWORD_HASH` | `npm run hash-password -- "…"` |
+| `POSTGRES_PASSWORD` | mot de passe fort |
+| `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY` | identifiants forts |
+| `MINIO_PUBLIC_ENDPOINT` | `fichiers.votredomaine.fr` |
+| `MINIO_PUBLIC_PORT` / `MINIO_PUBLIC_USE_SSL` | `443` / `true` |
+| `RESEND_API_KEY`, `RESEND_FROM`, `ADMIN_NOTIF_EMAIL` | compte Resend |
+
+`MINIO_ENDPOINT`, `MINIO_PORT` et `DATABASE_URL` sont surchargés par
+`docker-compose.yml` avec les noms de service internes : pas la peine d'y
+toucher.
+
+```bash
+docker compose build            # NEXT_PUBLIC_SITE_URL est lu au build
+docker compose up -d postgres minio
+docker compose run --rm migrate # applique prisma/migrations
+docker compose up -d
+docker compose ps               # app doit passer "healthy"
+```
+
+Puis le reverse proxy : `deploy/nginx.conf.example` contient les deux vhosts
+(app + fichiers), avec `client_max_body_size 60M` pour les uploads STL. Ensuite
+`certbot --nginx -d votredomaine.fr -d www.votredomaine.fr -d fichiers.votredomaine.fr`.
+
+### Ce qui n'est pas exposé
+
+Postgres (5432), l'API MinIO (9000), la console MinIO (9001) et l'app (3000)
+n'écoutent que sur `127.0.0.1`. Seul Nginx les joint. Pour la console MinIO :
+
+```bash
+ssh -L 9001:127.0.0.1:9001 user@vps   # puis http://localhost:9001
+```
+
+### Si le service `migrate` échoue
+
+Le CLI Prisma est embarqué dans l'image, mais en cas de souci vous pouvez
+migrer depuis l'hôte, Postgres étant publié sur la boucle locale :
+
+```bash
+DATABASE_URL="postgresql://user:MOTDEPASSE@127.0.0.1:5432/impression3d" \
+  npx prisma migrate deploy
+```
+
+### Mise à jour
+
+```bash
+git pull
 docker compose build
-docker compose run --rm migrate  # applique les migrations
+docker compose run --rm migrate
 docker compose up -d
 ```
 
-Puis le reverse proxy : voir `deploy/nginx.conf.example` (inclut
-`client_max_body_size 60M` pour les STL) et `certbot --nginx` pour TLS.
+### Reste à faire avant la mise en ligne
 
-Points à durcir avant la mise en ligne :
-
-- changer `MINIO_ACCESS_KEY` / `MINIO_SECRET_KEY` et `POSTGRES_PASSWORD` ;
-- ne pas publier les ports 5432, 9000 et 9001 sur l'extérieur (retirer les
-  `ports:` correspondants de `docker-compose.yml`, y accéder par tunnel SSH) ;
 - compléter `app/(site)/mentions-legales` et `app/(site)/confidentialite` avec
   les informations réelles (éditeur, hébergeur, SIRET, durées de conservation) ;
-- ajuster les coordonnées dans `lib/site.ts`.
+- ajuster les coordonnées dans `lib/site.ts` ;
+- recaler la grille tarifaire depuis `/admin/tarifs` ;
+- mettre en place les sauvegardes : `pg_dump` planifié et copie du volume
+  `miniodata`.
 
 ## Tarifs
 
@@ -125,8 +178,9 @@ Modifier la grille n'a aucun effet sur les devis déjà enregistrés.
 
 ## Ce qui reste à faire
 
-- Vérification de bout en bout avec Postgres et MinIO réels (l'environnement de
-  développement utilisé pour l'implémentation initiale n'avait pas accès au
-  registre Docker).
+- Vérification de bout en bout avec Postgres et MinIO réels, **y compris
+  `docker compose build`** : l'environnement de développement utilisé pour
+  l'implémentation n'avait pas accès au registre Docker, aucune image n'a donc
+  pu être construite ni lancée.
 - Sauvegardes : dump Postgres + réplication du volume MinIO.
 - Éventuel calcul de prix au volume réel (parsing du STL) plutôt qu'au forfait.

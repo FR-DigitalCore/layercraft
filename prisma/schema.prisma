@@ -1,5 +1,8 @@
 generator client {
   provider = "prisma-client-js"
+  // linux-musl-openssl-3.0.x : image Docker Alpine. Sans ça, le moteur de
+  // requête manque à l'exécution dans le conteneur.
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
