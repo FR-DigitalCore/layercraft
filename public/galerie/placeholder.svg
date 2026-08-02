@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" role="img" aria-label="Visuel indisponible">
+  <rect width="400" height="300" fill="#1a1a1a"/>
+  <g fill="none" stroke="#2a2a2a" stroke-width="1">
+    <path d="M0 100h400M0 200h400M100 0v300M200 0v300M300 0v300"/>
+  </g>
+  <g transform="translate(200 150)">
+    <path d="M-34 12 0 -8 34 12 0 32Z" fill="none" stroke="#ff6b2b" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M-34 -2 0 -22 34 -2" fill="none" stroke="#ff6b2b" stroke-width="2" stroke-linejoin="round" opacity=".6"/>
+    <path d="M-34 -16 0 -36 34 -16" fill="none" stroke="#ff6b2b" stroke-width="2" stroke-linejoin="round" opacity=".3"/>
+  </g>
+  <text x="200" y="230" fill="#888" font-family="sans-serif" font-size="12" text-anchor="middle">Visuel indisponible</text>
+</svg>

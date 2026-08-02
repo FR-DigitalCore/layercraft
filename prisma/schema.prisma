@@ -1,0 +1,119 @@
+generator client {
+  provider = "prisma-client-js"
+  // linux-musl-openssl-3.0.x : image Docker Alpine. Sans ça, le moteur de
+  // requête manque à l'exécution dans le conteneur.
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Devis {
+  id        String   @id @default(cuid())
+  token     String   @unique @default(cuid()) // pour URL suivi public
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Contact
+  nom       String
+  email     String
+  telephone String?
+  message   String?
+
+  // Config impression
+  matiere  String // PLA, PETG, ASA, TPU
+  couleur  String?
+  qualite  String // draft | standard | fine
+  quantite Int     @default(1)
+
+  // Fichier
+  stlKey String? // clé MinIO
+  stlNom String?
+
+  /// Volume de matière mesuré sur le STL, en cm³ (null si aucun fichier).
+  volumeCm3 Float?
+
+  // Suivi
+  statut     Statut  @default(RECU)
+  prixEstime Float?
+  prixFinal  Float?
+  noteAdmin  String?
+
+  evenements EvenementDevis[]
+
+  @@index([email])
+  @@index([statut])
+}
+
+/// Historique des changements de statut, utilisé par la timeline de /suivi/[token]
+model EvenementDevis {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  devisId   String
+  devis     Devis    @relation(fields: [devisId], references: [id], onDelete: Cascade)
+  statut    Statut
+  commentaire String?
+
+  @@index([devisId])
+}
+
+enum Statut {
+  RECU
+  EN_ETUDE
+  ACCEPTE
+  EN_IMPRESSION
+  TERMINE
+  EXPEDIE
+  ANNULE
+}
+
+/// Grille tarifaire éditable depuis /admin/tarifs.
+/// Table vide = valeurs par défaut de lib/prix.ts (GRILLE_DEFAUT).
+model TarifMatiere {
+  matiere        String   @id // PLA, PETG, ASA, TPU
+  prixBase       Float // mode FORFAIT : euros HT par pièce, qualité standard
+  prixParGramme  Float    @default(0.08) // modes MATIERE et MATIERE_TEMPS
+  densite        Float    @default(1.24) // g/cm³, pour convertir le volume en masse
+  updatedAt      DateTime @updatedAt
+}
+
+model TarifQualite {
+  qualite          String   @id // draft | standard | fine
+  multiplicateur   Float // mode FORFAIT
+  debitCm3ParHeure Float    @default(8) // mode MATIERE_TEMPS : vitesse d'impression
+  updatedAt        DateTime @updatedAt
+}
+
+/// Ligne unique (id = "global") : mode de calcul actif et paramètres transverses.
+model ParametresTarification {
+  id               String   @id @default("global")
+  mode             String   @default("FORFAIT") // FORFAIT | MATIERE | MATIERE_TEMPS
+  fraisMiseEnRoute Float    @default(5) // forfait fixe par commande
+  prixHoraire      Float    @default(4) // euros HT par heure machine
+  tauxRemplissage  Float    @default(0.25) // 0,25 = 25 % d'infill
+  volumeParDefaut  Float    @default(30) // cm³ retenus quand aucun STL n'est fourni
+  updatedAt        DateTime @updatedAt
+}
+
+model RemiseQuantite {
+  id          String   @id @default(cuid())
+  seuil       Int      @unique // à partir de N pièces
+  coefficient Float // 0.85 = -15 %
+  updatedAt   DateTime @updatedAt
+}
+
+model Realisation {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  titre       String
+  description String?
+  imageKey    String // clé MinIO
+  matiere     String?
+  tags        String[] // ex: ["pièce technique", "PETG"]
+  visible     Boolean  @default(true)
+  ordre       Int      @default(0)
+
+  @@index([visible, ordre])
+}

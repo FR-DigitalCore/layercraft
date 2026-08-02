@@ -1,0 +1,65 @@
+# Reverse proxy Nginx pour le VPS. Deux vhosts :
+#   votredomaine.fr     → l'application Next (conteneur app, port 3000)
+#   fichiers.votredomaine.fr → l'API MinIO (conteneur minio, port 9000)
+#
+# Le second est indispensable : les presigned URLs sont signées sur le domaine
+# public (MINIO_PUBLIC_ENDPOINT), et la signature couvre l'en-tête Host. Sans
+# ce vhost, les aperçus STL et les images de la galerie ne se chargent pas.
+#
+# Mise en place :
+# 1. Copier dans /etc/nginx/sites-available/layercraft, adapter les domaines
+# 2. ln -s vers /etc/nginx/sites-enabled/ puis `nginx -t && systemctl reload nginx`
+# 3. certbot --nginx -d votredomaine.fr -d www.votredomaine.fr -d fichiers.votredomaine.fr
+#    (Certbot réécrit ces blocs pour y ajouter le TLS)
+
+server {
+    listen 80;
+    server_name votredomaine.fr www.votredomaine.fr;
+
+    # Les uploads STL vont jusqu'à 50 Mo ; laisser une marge.
+    client_max_body_size 60M;
+
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        # Un gros STL peut mettre du temps à remonter.
+        proxy_read_timeout 300s;
+        proxy_send_timeout 300s;
+    }
+}
+
+server {
+    listen 80;
+    server_name fichiers.votredomaine.fr;
+
+    # Sert uniquement des lectures signées : pas d'upload par ce chemin.
+    client_max_body_size 1M;
+
+    add_header X-Content-Type-Options "nosniff" always;
+
+    location / {
+        proxy_pass http://127.0.0.1:9000;
+        proxy_http_version 1.1;
+        # `Host` doit être transmis tel quel : il fait partie de la signature.
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_buffering off;
+        proxy_read_timeout 300s;
+    }
+}
+
+# La console MinIO (9001) n'est pas exposée : elle n'écoute que sur la boucle
+# locale du VPS. Y accéder par tunnel SSH :
+#   ssh -L 9001:127.0.0.1:9001 user@vps  puis http://localhost:9001
