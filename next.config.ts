@@ -3,11 +3,17 @@ import type { NextConfig } from "next";
 // Le navigateur charge les images de la galerie via des presigned URLs signées
 // sur l'endpoint public de MinIO (voir lib/minio.ts) : c'est cet hôte-là qu'il
 // faut autoriser, pas le nom de service interne du réseau Docker.
-const minioHost =
-  process.env.MINIO_PUBLIC_ENDPOINT || process.env.MINIO_ENDPOINT || "localhost";
-const minioPort = process.env.MINIO_PUBLIC_PORT || process.env.MINIO_PORT || "9000";
-const minioSsl =
-  (process.env.MINIO_PUBLIC_USE_SSL ?? process.env.MINIO_USE_SSL ?? "false") === "true";
+// Les deux fichiers doivent donc résoudre l'endpoint de la même façon.
+// Repli tout-ou-rien, comme lib/ts : sans endpoint public, on reprend
+// l'interne en entier, sinon l'hôte et le port seraient dépareillés.
+const minioPublic = process.env.MINIO_PUBLIC_ENDPOINT;
+const minioHost = minioPublic || process.env.MINIO_ENDPOINT || "localhost";
+const minioPort = minioPublic
+  ? process.env.MINIO_PUBLIC_PORT || "443"
+  : process.env.MINIO_PORT || "9000";
+const minioSsl = minioPublic
+  ? (process.env.MINIO_PUBLIC_USE_SSL ?? "true") === "true"
+  : process.env.MINIO_USE_SSL === "true";
 
 const nextConfig: NextConfig = {
   // Image Docker minimale (voir Dockerfile)
