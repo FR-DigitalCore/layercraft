@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { ModeLivraison } from "@prisma/client";
-import { auth } from "@/auth";
+import { exigerAdmin } from "@/lib/garde-admin";
 import { chargerGrillePort, enregistrerGrillePort } from "@/lib/tarifs-livraison";
 import { premiereErreur } from "@/lib/validation";
 import type { GrillePort } from "@/lib/livraison";
@@ -22,18 +22,14 @@ const grillePortSchema = z.record(
 );
 
 export async function GET() {
-  const session = await auth();
-  if (session?.user?.role !== "admin") {
-    return NextResponse.json({ erreur: "Accès refusé." }, { status: 403 });
-  }
+  const refus = await exigerAdmin();
+  if (refus) return refus;
   return NextResponse.json(await chargerGrillePort());
 }
 
 export async function PUT(request: Request) {
-  const session = await auth();
-  if (session?.user?.role !== "admin") {
-    return NextResponse.json({ erreur: "Accès refusé." }, { status: 403 });
-  }
+  const refus = await exigerAdmin();
+  if (refus) return refus;
 
   let corps: unknown;
   try {

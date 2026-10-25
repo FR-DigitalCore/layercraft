@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { exigerAdmin } from "@/lib/garde-admin";
 import { prisma } from "@/lib/prisma";
 import { majCommandeSchema, premiereErreur } from "@/lib/validation";
 import { envoyerChangementStatut } from "@/lib/emails";
@@ -11,10 +11,8 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ erreur: "Non authentifié." }, { status: 401 });
-  }
+  const refus = await exigerAdmin();
+  if (refus) return refus;
 
   const { id } = await params;
   const devis = await prisma.devis.findUnique({
@@ -32,10 +30,8 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ erreur: "Non authentifié." }, { status: 401 });
-  }
+  const refus = await exigerAdmin();
+  if (refus) return refus;
 
   const { id } = await params;
 

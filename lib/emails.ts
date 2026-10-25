@@ -24,10 +24,16 @@ function gabarit(titre: string, corps: string): string {
 </body></html>`;
 }
 
+/**
+ * Échappe systématiquement la valeur : elle vient presque toujours d'un champ
+ * rempli par le demandeur (nom, couleur, nom de fichier, téléphone). Sans
+ * cela, un devis au nom de `<a href="…">` injecte du HTML dans l'email reçu
+ * par l'atelier comme dans celui du client.
+ */
 function ligne(label: string, valeur: string): string {
   return `<tr>
-    <td style="padding:6px 0;color:#777;font-size:14px;width:140px">${label}</td>
-    <td style="padding:6px 0;font-size:14px;font-weight:600">${valeur}</td>
+    <td style="padding:6px 0;color:#777;font-size:14px;width:140px">${echapper(label)}</td>
+    <td style="padding:6px 0;font-size:14px;font-weight:600">${echapper(valeur)}</td>
   </tr>`;
 }
 
@@ -45,7 +51,7 @@ function recapitulatif(devis: Devis): string {
 }
 
 function bouton(url: string, libelle: string): string {
-  return `<a href="${url}" style="display:inline-block;background:#ff6b2b;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:600;font-size:14px">${libelle}</a>`;
+  return `<a href="${echapper(url)}" style="display:inline-block;background:#ff6b2b;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:600;font-size:14px">${echapper(libelle)}</a>`;
 }
 
 export function urlSuivi(token: string): string {
@@ -58,7 +64,7 @@ export async function envoyerConfirmationClient(devis: Devis): Promise<boolean> 
     to: devis.email,
     subject: `Votre demande de devis — ${site.nom}`,
     html: gabarit(
-      `Bonjour ${devis.nom}, votre demande est bien reçue.`,
+      `Bonjour ${echapper(devis.nom)}, votre demande est bien reçue.`,
       `<p style="font-size:14px;line-height:1.6;color:#444">
          Nous revenons vers vous sous 24 à 48 h ouvrées avec un devis ferme.
          Voici le récapitulatif de votre demande :
@@ -144,10 +150,10 @@ export async function envoyerLienMagique(
   lien: string,
   validiteMinutes: number,
 ): Promise<boolean> {
-  // Sans Resend configuré, l'email n'est pas envoyé : on imprime le lien pour
-  // pouvoir se connecter en développement. Jamais en production, où la clé
-  // est présente — un lien de connexion dans les logs serait une fuite.
-  if (!process.env.RESEND_API_KEY) {
+  // Un lien magique est un identifiant de connexion à usage unique : l'écrire
+  // dans les logs revient à l'exposer à quiconque les lit. On ne le fait donc
+  // qu'en développement, et seulement quand aucun envoi réel n'est possible.
+  if (process.env.NODE_ENV !== "production" && !process.env.RESEND_API_KEY) {
     console.info(`[lien-magique:dev] ${destinataire} → ${lien}`);
   }
 
@@ -171,9 +177,13 @@ export async function envoyerLienMagique(
   });
 }
 
+/** Les guillemets sont échappés aussi : `echapper` sert également en
+ *  contexte d'attribut, dans le href des boutons. */
 function echapper(texte: string): string {
   return texte
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }

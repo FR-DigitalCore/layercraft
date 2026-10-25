@@ -1,15 +1,13 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { exigerAdmin } from "@/lib/garde-admin";
 import { prisma } from "@/lib/prisma";
 import { premiereErreur, realisationSchema } from "@/lib/validation";
 
 export const runtime = "nodejs";
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ erreur: "Non authentifié." }, { status: 401 });
-  }
+  const refus = await exigerAdmin();
+  if (refus) return refus;
 
   const realisations = await prisma.realisation.findMany({
     orderBy: [{ ordre: "asc" }, { createdAt: "desc" }],
@@ -18,10 +16,8 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ erreur: "Non authentifié." }, { status: 401 });
-  }
+  const refus = await exigerAdmin();
+  if (refus) return refus;
 
   let corps: unknown;
   try {
