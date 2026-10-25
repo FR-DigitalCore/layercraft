@@ -7,6 +7,11 @@ import type { NextAuthConfig } from "next-auth";
  * uniquement dans `auth.ts`.
  */
 export const authConfig = {
+  // NextAuth v5 rejette toute requête dont l'hôte n'est pas déclaré de
+  // confiance (UntrustedHost), et il ne lit pas NEXTAUTH_URL pour cela.
+  // En auto-hébergement derrière Nginx, l'en-tête Host est fixé par le
+  // reverse proxy (server_name) : on peut s'y fier.
+  trustHost: true,
   pages: {
     signIn: "/admin/login",
   },

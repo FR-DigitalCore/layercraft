@@ -46,7 +46,12 @@ COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/.bin/prisma ./node_modules/.bin/prisma
+
+# node_modules/.bin/prisma est un lien symbolique, et COPY suit les liens : le
+# copier déposerait le vrai build/index.js dans .bin/, où il ne retrouverait
+# plus les .wasm qu'il charge depuis son propre dossier. On recrée le lien.
+RUN mkdir -p node_modules/.bin \
+  && ln -sf ../prisma/build/index.js node_modules/.bin/prisma
 
 USER nextjs
 EXPOSE 3000
