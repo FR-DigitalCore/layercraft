@@ -52,7 +52,9 @@ services:
     env_file: .env
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD:-password}@postgres:5432/${POSTGRES_DB:-impression3d}
-    command: ["node_modules/.bin/prisma", "migrate", "deploy"]
+    # Invoqué par son chemin réel plutôt que par node_modules/.bin : le CLI
+    # charge ses ressources .wasm depuis le dossier du fichier exécuté.
+    command: ["node", "node_modules/prisma/build/index.js", "migrate", "deploy"]
     depends_on:
       postgres:
         condition: service_healthy
