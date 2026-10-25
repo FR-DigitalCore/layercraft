@@ -8,14 +8,23 @@ services:
     restart: unless-stopped
     env_file: .env
     environment:
-      # Dans le réseau Compose, les services se joignent par leur nom
+      # Dans le réseau Compose, les services se joignent par leur NOM et sur
+      # leur port INTERNE (5432, 9000). Les ports *_HOST_PORT plus bas ne
+      # concernent que la machine hôte : les changer ne doit jamais modifier
+      # ces trois lignes, sous peine d'un ECONNREFUSED côté conteneur.
       DATABASE_URL: postgresql://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD:-password}@postgres:5432/${POSTGRES_DB:-impression3d}
       MINIO_ENDPOINT: minio
       MINIO_PORT: "9000"
       MINIO_USE_SSL: "false"
+      # Le navigateur, lui, ne sait pas résoudre `minio` : les presigned URLs
+      # sont signées sur l'hôte public. En local c'est la boucle locale du
+      # poste, sur le port publié par le service minio.
+      MINIO_PUBLIC_ENDPOINT: ${MINIO_PUBLIC_ENDPOINT:-localhost}
+      MINIO_PUBLIC_PORT: ${MINIO_PUBLIC_PORT:-${MINIO_HOST_PORT:-9000}}
+      MINIO_PUBLIC_USE_SSL: ${MINIO_PUBLIC_USE_SSL:-false}
     ports:
       # Seul Nginx doit joindre l'app : on n'écoute que sur la boucle locale.
-      - "127.0.0.1:3000:3000"
+      - "127.0.0.1:${APP_HOST_PORT:-3000}:3000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -60,7 +69,9 @@ services:
       - pgdata:/var/lib/postgresql/data
     ports:
       # Jamais exposé publiquement : accès par tunnel SSH si besoin.
-      - "127.0.0.1:5432:5432"
+      # POSTGRES_HOST_PORT ne change que le port côté hôte (utile si un
+      # Postgres tourne déjà en 5432) ; l'app continue de viser 5432.
+      - "127.0.0.1:${POSTGRES_HOST_PORT:-5432}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-user} -d ${POSTGRES_DB:-impression3d}"]
       interval: 5s
@@ -79,11 +90,12 @@ services:
     volumes:
       - miniodata:/data
     ports:
-      # L'API (9000) est publiée sur la boucle locale et exposée au navigateur
-      # par Nginx : les presigned URLs sont signées sur le domaine public.
-      - "127.0.0.1:9000:9000"
+      # L'API (9000 à l'intérieur) est publiée sur la boucle locale et exposée
+      # au navigateur par Nginx : les presigned URLs sont signées sur l'hôte
+      # public. MINIO_HOST_PORT ne change que le port côté hôte.
+      - "127.0.0.1:${MINIO_HOST_PORT:-9000}:9000"
       # La console d'administration reste strictement locale.
-      - "127.0.0.1:9001:9001"
+      - "127.0.0.1:${MINIO_CONSOLE_HOST_PORT:-9001}:9001"
     healthcheck:
       test: ["CMD", "mc", "ready", "local"]
       interval: 10s

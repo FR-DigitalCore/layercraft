@@ -39,6 +39,25 @@ npm run dev
 Les buckets `stl-files` et `galerie` sont créés automatiquement au premier
 upload. Ils restent privés : toute lecture passe par une presigned URL d'une heure.
 
+### Ports déjà pris
+
+Si un Postgres ou un MinIO tourne déjà sur votre poste, changez les ports
+**publiés** dans `.env`, jamais les chaînes de connexion :
+
+```env
+POSTGRES_HOST_PORT="5433"
+MINIO_HOST_PORT="9003"
+MINIO_CONSOLE_HOST_PORT="9004"
+```
+
+Ces variables n'agissent que sur la machine hôte. Dans le réseau Docker, les
+conteneurs s'écoutent toujours sur leurs ports internes : l'app joint
+`postgres:5432` et `minio:9000` quoi qu'il arrive. Modifier `DATABASE_URL` ou
+`MINIO_PORT` pour y mettre un port publié donne un `ECONNREFUSED`.
+
+`docker-compose.yml` aligne tout seul `MINIO_PUBLIC_PORT` sur `MINIO_HOST_PORT`,
+pour que les presigned URLs restent joignables depuis le navigateur.
+
 Le seed insère des réalisations dont les images n'existent pas dans MinIO — la
 galerie affiche alors le visuel de repli. Téléversez de vraies photos depuis
 `/admin/realisations`.
