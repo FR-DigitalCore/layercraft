@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Statut } from "@prisma/client";
+import { ModeLivraison, Statut } from "@prisma/client";
 import { MATIERES, MODES, QUALITES } from "@/lib/prix";
 
 export const devisSchema = z
@@ -35,8 +35,47 @@ export const devisSchema = z
     stlKey: z.string().trim().max(300).optional(),
     stlNom: z.string().trim().max(255).optional(),
 
+    // Livraison
+    modeLivraison: z.enum(ModeLivraison).default("RETRAIT"),
+    adresseLigne1: z.string().trim().max(200).optional().or(z.literal("")),
+    adresseLigne2: z.string().trim().max(200).optional().or(z.literal("")),
+    codePostal: z.string().trim().max(10).optional().or(z.literal("")),
+    ville: z.string().trim().max(120).optional().or(z.literal("")),
+    pointRelaisId: z.string().trim().max(40).optional().or(z.literal("")),
+    pointRelaisNom: z.string().trim().max(200).optional().or(z.literal("")),
+
     // Anti-spam : champ invisible qui doit rester vide
     website: z.string().max(0).optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.modeLivraison === "RETRAIT") return;
+
+    if (!/^\d{5}$/.test(data.codePostal ?? "")) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Code postal à 5 chiffres requis pour une expédition.",
+        path: ["codePostal"],
+      });
+    }
+    if (data.modeLivraison === "COLISSIMO") {
+      if (!data.adresseLigne1) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Adresse de livraison requise.",
+          path: ["adresseLigne1"],
+        });
+      }
+      if (!data.ville) {
+        ctx.addIssue({ code: "custom", message: "Ville requise.", path: ["ville"] });
+      }
+    }
+    if (data.modeLivraison === "MONDIAL_RELAY" && !data.pointRelaisId) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Choisissez un point relais.",
+        path: ["pointRelaisId"],
+      });
+    }
   })
   .refine((data) => Boolean(data.stlKey) || Boolean(data.message), {
     message:

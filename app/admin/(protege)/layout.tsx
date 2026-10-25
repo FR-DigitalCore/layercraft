@@ -36,6 +36,12 @@ export default async function AdminLayout({
               >
                 Tarifs
               </Link>
+              <Link
+                href="/admin/livraison"
+                className="text-muted transition-colors hover:text-text"
+              >
+                Livraison
+              </Link>
               <Link href="/" className="text-muted transition-colors hover:text-text">
                 Voir le site
               </Link>

@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { DevisForm } from "@/components/DevisForm";
 import { TitreSection } from "@/components/ui/Card";
 import { chargerGrille } from "@/lib/tarifs";
+import { chargerGrillePort } from "@/lib/tarifs-livraison";
 
 export const metadata: Metadata = {
   title: "Demander un devis",
@@ -15,7 +16,10 @@ export const metadata: Metadata = {
 export const revalidate = 3600;
 
 export default async function DevisPage() {
-  const grille = await chargerGrille();
+  const [grille, grillePort] = await Promise.all([
+    chargerGrille(),
+    chargerGrillePort(),
+  ]);
 
   return (
     <div className="conteneur py-16">
@@ -29,7 +33,7 @@ export default async function DevisPage() {
           <div className="mt-10 h-96 animate-pulse rounded-xl border border-border bg-surface" />
         }
       >
-        <DevisForm grille={grille} />
+        <DevisForm grille={grille} grillePort={grillePort} />
       </Suspense>
     </div>
   );
