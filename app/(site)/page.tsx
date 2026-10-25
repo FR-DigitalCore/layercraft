@@ -6,7 +6,7 @@ import { listerRealisations } from "@/lib/realisations";
 import { ButtonLink } from "@/components/ui/Button";
 import { Card, TitreSection } from "@/components/ui/Card";
 import { CarteRealisation } from "@/components/GalerieGrid";
-import { JsonLdLocalBusiness } from "@/components/JsonLd";
+import { JsonLdService } from "@/components/JsonLd";
 
 export const metadata: Metadata = {
   alternates: { canonical: "/" },
@@ -32,7 +32,7 @@ const ETAPES = [
     numero: "03",
     titre: "Vous recevez la pièce",
     texte:
-      "Retrait sur place à Bourg-en-Bresse ou expédition. Vous suivez l'avancement en ligne à chaque étape.",
+      "Expédition partout en France, ou retrait sur place. Vous suivez l'avancement en ligne à chaque étape.",
   },
 ];
 
@@ -41,14 +41,14 @@ export default async function HomePage() {
 
   return (
     <>
-      <JsonLdLocalBusiness />
+      <JsonLdService />
 
       {/* Hero */}
       <section className="fond-hero border-b border-border">
         <div className="conteneur py-20 sm:py-28">
           <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-muted">
             <span className="size-1.5 rounded-full bg-accent" />
-            Service local — {site.adresse.ville} et tout l&apos;Ain
+            Devis en ligne — livraison partout en France
           </p>
           <h1 className="max-w-3xl text-4xl leading-[1.1] font-bold text-balance sm:text-6xl">
             Votre pièce imprimée en 3D,{" "}
@@ -72,7 +72,7 @@ export default async function HomePage() {
               ["24-48 h", "Réponse au devis"],
               ["4", "Matières au catalogue"],
               ["0,1 mm", "Finition la plus fine"],
-              ["01", "Livraison dans l'Ain"],
+              ["France", "Zone de livraison"],
             ].map(([valeur, label]) => (
               <div key={label}>
                 <dt className="font-display text-2xl font-bold">{valeur}</dt>

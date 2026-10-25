@@ -7,7 +7,7 @@ import { ButtonLink } from "@/components/ui/Button";
 export const metadata: Metadata = {
   title: "Réalisations",
   description:
-    "Pièces techniques, prototypes et objets sur mesure imprimés en 3D dans l'Ain : quelques exemples de ce qui sort de l'atelier.",
+    "Pièces techniques, prototypes et objets sur mesure imprimés en 3D : quelques exemples de ce qui sort de l'atelier.",
   alternates: { canonical: "/galerie" },
 };
 
