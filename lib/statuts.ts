@@ -4,6 +4,7 @@ export const STATUTS: Statut[] = [
   "RECU",
   "EN_ETUDE",
   "ACCEPTE",
+  "PAYE",
   "EN_IMPRESSION",
   "TERMINE",
   "EXPEDIE",
@@ -15,6 +16,7 @@ export const ETAPES_TIMELINE: Statut[] = [
   "RECU",
   "EN_ETUDE",
   "ACCEPTE",
+  "PAYE",
   "EN_IMPRESSION",
   "TERMINE",
   "EXPEDIE",
@@ -35,9 +37,15 @@ export const STATUT_INFOS: Record<
     couleur: "bg-amber-500/15 text-amber-300 border-amber-500/30",
   },
   ACCEPTE: {
-    label: "Devis accepté",
-    description: "Le devis est validé, la pièce entre en file d'impression.",
+    label: "Devis à régler",
+    description:
+      "Votre devis est chiffré. Le règlement en ligne lance la production.",
     couleur: "bg-violet-500/15 text-violet-300 border-violet-500/30",
+  },
+  PAYE: {
+    label: "Paiement reçu",
+    description: "Le règlement est encaissé, la pièce entre en file d'impression.",
+    couleur: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
   },
   EN_IMPRESSION: {
     label: "En impression",

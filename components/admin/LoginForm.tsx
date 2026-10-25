@@ -18,7 +18,7 @@ export function LoginForm() {
     setEnvoi(true);
 
     const donnees = new FormData(event.currentTarget);
-    const resultat = await signIn("credentials", {
+    const resultat = await signIn("admin", {
       email: String(donnees.get("email") ?? ""),
       password: String(donnees.get("password") ?? ""),
       redirect: false,

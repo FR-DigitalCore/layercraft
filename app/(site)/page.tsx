@@ -1,6 +1,5 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { site } from "@/lib/site";
 import { MATIERE_INFOS, MATIERES } from "@/lib/prix";
 import { listerRealisations } from "@/lib/realisations";
 import { ButtonLink } from "@/components/ui/Button";

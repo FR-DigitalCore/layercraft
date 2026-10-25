@@ -69,7 +69,12 @@ export async function envoyerConfirmationClient(devis: Devis): Promise<boolean> 
          compte du volume réel de la pièce ni du temps machine.
        </p>
        <p style="margin:24px 0 8px">${bouton(lien, "Suivre ma demande")}</p>
-       <p style="font-size:12px;color:#999;word-break:break-all">${lien}</p>`,
+       <p style="font-size:12px;color:#999;word-break:break-all">${lien}</p>
+       <p style="font-size:13px;line-height:1.6;color:#777">
+         Vous pouvez aussi retrouver toutes vos demandes au même endroit en vous
+         connectant avec cette adresse email, sans mot de passe :
+         <a href="${site.url}/connexion" style="color:#ff6b2b">${site.url}/connexion</a>
+       </p>`,
     ),
   });
 }
@@ -121,6 +126,38 @@ export async function envoyerChangementStatut(devis: Devis): Promise<boolean> {
            : ""
        }
        <p style="margin:24px 0 0">${bouton(urlSuivi(devis.token), "Voir le suivi")}</p>`,
+    ),
+  });
+}
+
+export async function envoyerLienMagique(
+  destinataire: string,
+  lien: string,
+  validiteMinutes: number,
+): Promise<boolean> {
+  // Sans Resend configuré, l'email n'est pas envoyé : on imprime le lien pour
+  // pouvoir se connecter en développement. Jamais en production, où la clé
+  // est présente — un lien de connexion dans les logs serait une fuite.
+  if (!process.env.RESEND_API_KEY) {
+    console.info(`[lien-magique:dev] ${destinataire} → ${lien}`);
+  }
+
+  return envoyerEmail({
+    to: destinataire,
+    subject: `Votre lien de connexion — ${site.nom}`,
+    html: gabarit(
+      "Connectez-vous à votre espace",
+      `<p style="font-size:14px;line-height:1.6;color:#444">
+         Cliquez sur le bouton ci-dessous pour accéder à vos demandes et suivre
+         vos commandes. Ce lien est valable ${validiteMinutes} minutes et ne
+         fonctionne qu'une seule fois.
+       </p>
+       <p style="margin:24px 0 8px">${bouton(lien, "Me connecter")}</p>
+       <p style="font-size:12px;color:#999;word-break:break-all">${lien}</p>
+       <p style="font-size:13px;line-height:1.6;color:#777">
+         Vous n'êtes pas à l'origine de cette demande ? Ignorez cet email,
+         aucun accès ne sera ouvert.
+       </p>`,
     ),
   });
 }

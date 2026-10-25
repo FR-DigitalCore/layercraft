@@ -66,9 +66,22 @@ export async function POST(request: Request) {
     const grille = await chargerGrille();
     const volumeCm3 = donnees.stlKey ? await mesurerVolume(donnees.stlKey) : null;
 
+    // Le compte client est créé à la volée : la personne n'a rien à faire,
+    // ses demandes se regroupent et elle pourra se connecter plus tard avec
+    // cette adresse. Aucun mot de passe n'est généré ni stocké.
+    const emailNormalise = donnees.email.trim().toLowerCase();
+    const user = await prisma.user.upsert({
+      where: { email: emailNormalise },
+      create: { email: emailNormalise, name: donnees.nom },
+      update: {},
+      select: { id: true },
+    });
+
     const devis = await prisma.devis.create({
       data: {
         ...donnees,
+        email: emailNormalise,
+        userId: user.id,
         token: genererToken(),
         volumeCm3,
         prixEstime: estimerPrix(
