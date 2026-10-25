@@ -13,27 +13,37 @@ const identifiants = {
   secretKey: process.env.MINIO_SECRET_KEY ?? "minioadmin",
 };
 
+const endpointInterne = {
+  host: process.env.MINIO_ENDPOINT || "localhost",
+  port: Number(process.env.MINIO_PORT || 9000),
+  ssl: process.env.MINIO_USE_SSL === "true",
+};
+
 /**
  * Endpoint public utilisé pour signer les URLs destinées au navigateur.
  * En Docker, l'app joint MinIO par le nom de service `minio`, que le
  * navigateur ne sait pas résoudre : la signature couvrant le Host, elle doit
- * être calculée sur le domaine réellement visité. Non défini, on retombe sur
- * l'endpoint interne, ce qui convient en développement local.
+ * être calculée sur le domaine réellement visité.
+ *
+ * Le repli est tout-ou-rien : sans MINIO_PUBLIC_ENDPOINT, on reprend
+ * l'endpoint interne en entier. Mélanger l'hôte interne avec le port et le
+ * TLS publics donnerait une URL injoignable (https://localhost:443).
  */
-export const endpointPublic = {
-  host: process.env.MINIO_PUBLIC_ENDPOINT || process.env.MINIO_ENDPOINT || "localhost",
-  port: Number(process.env.MINIO_PUBLIC_PORT || process.env.MINIO_PORT || 9000),
-  ssl:
-    (process.env.MINIO_PUBLIC_USE_SSL ?? process.env.MINIO_USE_SSL ?? "false") === "true",
-};
+export const endpointPublic = process.env.MINIO_PUBLIC_ENDPOINT
+  ? {
+      host: process.env.MINIO_PUBLIC_ENDPOINT,
+      port: Number(process.env.MINIO_PUBLIC_PORT || 443),
+      ssl: (process.env.MINIO_PUBLIC_USE_SSL ?? "true") === "true",
+    }
+  : endpointInterne;
 
 /** Client interne : lectures, écritures et administration des buckets. */
 export const minio =
   globalForMinio.minio ??
   new Client({
-    endPoint: process.env.MINIO_ENDPOINT ?? "localhost",
-    port: Number(process.env.MINIO_PORT ?? 9000),
-    useSSL: process.env.MINIO_USE_SSL === "true",
+    endPoint: endpointInterne.host,
+    port: endpointInterne.port,
+    useSSL: endpointInterne.ssl,
     ...identifiants,
   });
 
