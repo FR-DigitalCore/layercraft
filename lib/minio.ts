@@ -11,6 +11,12 @@ export const BUCKET_GALERIE = process.env.MINIO_BUCKET_GALERIE ?? "galerie";
 const identifiants = {
   accessKey: process.env.MINIO_ACCESS_KEY ?? "minioadmin",
   secretKey: process.env.MINIO_SECRET_KEY ?? "minioadmin",
+  // Indispensable, et pas seulement une optimisation : sans région explicite,
+  // le client la résout par un appel réseau à son propre endpoint. Le client
+  // public viserait alors l'hôte public depuis l'intérieur du conteneur, où
+  // il n'est pas joignable, et la signature échouerait alors même que le
+  // fichier est déjà stocké.
+  region: process.env.MINIO_REGION || "us-east-1",
 };
 
 const endpointInterne = {
