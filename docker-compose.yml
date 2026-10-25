@@ -44,17 +44,18 @@ services:
       start_period: 20s
 
   # Migrations : `docker compose run --rm migrate`
+  # Étape d'image dédiée : elle garde node_modules en entier, le CLI Prisma
+  # ayant besoin de ses dépendances transitives. La commande est le CMD de
+  # cette étape (voir Dockerfile).
   migrate:
     build:
       context: .
+      target: migrator
       args:
         NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
     env_file: .env
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD:-password}@postgres:5432/${POSTGRES_DB:-impression3d}
-    # Invoqué par son chemin réel plutôt que par node_modules/.bin : le CLI
-    # charge ses ressources .wasm depuis le dossier du fichier exécuté.
-    command: ["node", "node_modules/prisma/build/index.js", "migrate", "deploy"]
     depends_on:
       postgres:
         condition: service_healthy
