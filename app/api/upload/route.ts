@@ -63,6 +63,17 @@ export async function POST(request: Request) {
 
   try {
     await envoyerFichier(BUCKET_STL, cle, buffer, "model/stl");
+  } catch (erreur) {
+    console.error("[upload] écriture dans le stockage impossible", erreur);
+    return NextResponse.json(
+      { erreur: "Le stockage du fichier a échoué. Réessayez dans un instant." },
+      { status: 502 },
+    );
+  }
+
+  // Étape distincte : le fichier est déjà stocké à ce stade. Les confondre
+  // donnait un « stockage échoué » trompeur quand seule la signature cassait.
+  try {
     const url = await urlSignee(BUCKET_STL, cle, 3600);
     return NextResponse.json({
       key: cle,
@@ -74,9 +85,12 @@ export async function POST(request: Request) {
       volumeCm3: calculerVolumeCm3(buffer),
     });
   } catch (erreur) {
-    console.error("[upload] échec MinIO", erreur);
+    console.error(
+      "[upload] fichier stocké mais signature de l'URL impossible — vérifiez MINIO_PUBLIC_ENDPOINT",
+      erreur,
+    );
     return NextResponse.json(
-      { erreur: "Le stockage du fichier a échoué. Réessayez dans un instant." },
+      { erreur: "Le fichier est enregistré, mais son aperçu est indisponible." },
       { status: 502 },
     );
   }
