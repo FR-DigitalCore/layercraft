@@ -106,7 +106,10 @@ export async function envoyerNotificationAdmin(devis: Devis): Promise<boolean> {
   });
 }
 
-export async function envoyerChangementStatut(devis: Devis): Promise<boolean> {
+export async function envoyerChangementStatut(
+  devis: Devis,
+  lienPaiement?: string | null,
+): Promise<boolean> {
   const infos = STATUT_INFOS[devis.statut];
   return envoyerEmail({
     to: devis.email,
@@ -115,6 +118,12 @@ export async function envoyerChangementStatut(devis: Devis): Promise<boolean> {
       `Votre commande passe à « ${infos.label} »`,
       `<p style="font-size:14px;line-height:1.6;color:#444">${infos.description}</p>
        ${recapitulatif(devis)}
+       ${
+         lienPaiement
+           ? `<p style="margin:24px 0 8px">${bouton(lienPaiement, "Régler en ligne")}</p>
+              <p style="font-size:12px;color:#999">Paiement sécurisé par Stripe. Le lien reste valable sept jours ; passé ce délai, relancez le règlement depuis votre page de suivi.</p>`
+           : ""
+       }
        ${
          devis.prixFinal !== null
            ? `<p style="font-size:14px"><strong>Prix final : ${formatPrix(devis.prixFinal)}</strong></p>`
