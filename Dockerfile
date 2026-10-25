@@ -27,6 +27,20 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN npx prisma generate
 RUN npm run build
 
+# --- Migrations ----------------------------------------------------------
+# Image à part, pour le service `migrate` du docker-compose. Le CLI Prisma
+# traîne son propre arbre de dépendances (@prisma/config → effect, c12…) :
+# recopier les seuls dossiers prisma/ et @prisma/ dans l'image applicative
+# laissait ces transitives derrière, d'où un MODULE_NOT_FOUND. On garde donc
+# node_modules en entier ici — l'image ne sert qu'à jouer les migrations et
+# n'est jamais déployée.
+FROM base AS migrator
+ENV NODE_ENV=production
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/package.json ./package.json
+CMD ["node", "node_modules/prisma/build/index.js", "migrate", "deploy"]
+
 # --- Runtime -------------------------------------------------------------
 FROM base AS runner
 ENV NODE_ENV=production
@@ -40,18 +54,12 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Le CLI Prisma, son schéma et le client généré : nécessaires au service
-# `migrate` du docker-compose, et le moteur de requête l'est au runtime.
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+# Le client généré et son moteur de requête. Le tracing de Next les embarque
+# déjà dans .next/standalone ; ces deux lignes sont une ceinture de sécurité,
+# un oubli du tracing ne se verrait qu'à l'exécution. Le CLI Prisma, lui,
+# n'a rien à faire ici : les migrations tournent depuis l'étape `migrator`.
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-
-# node_modules/.bin/prisma est un lien symbolique, et COPY suit les liens : le
-# copier déposerait le vrai build/index.js dans .bin/, où il ne retrouverait
-# plus les .wasm qu'il charge depuis son propre dossier. On recrée le lien.
-RUN mkdir -p node_modules/.bin \
-  && ln -sf ../prisma/build/index.js node_modules/.bin/prisma
+COPY --from=builder /app/node_modules/@prisma/client ./node_modules/@prisma/client
 
 USER nextjs
 EXPOSE 3000

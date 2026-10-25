@@ -113,6 +113,17 @@ docker compose up -d
 docker compose ps               # app doit passer "healthy"
 ```
 
+Le service `migrate` est construit depuis une étape d'image dédiée
+(`target: migrator`) qui conserve `node_modules` en entier : le CLI Prisma a
+besoin de ses dépendances transitives. L'image applicative, elle, n'embarque
+que le client généré et son moteur.
+
+Pour insérer le jeu de démonstration, depuis la même image :
+
+```bash
+docker compose run --rm migrate node prisma/seed.mjs
+```
+
 Puis le reverse proxy : `deploy/nginx.conf.example` contient les deux vhosts
 (app + fichiers), avec `client_max_body_size 60M` pour les uploads STL. Ensuite
 `certbot --nginx -d votredomaine.fr -d www.votredomaine.fr -d fichiers.votredomaine.fr`.
