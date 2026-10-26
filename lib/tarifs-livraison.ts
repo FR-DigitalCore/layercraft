@@ -20,10 +20,12 @@ export const chargerGrillePort = cache(async (): Promise<GrillePort> => {
     ) as GrillePort;
 
     for (const ligne of lignes) {
-      grille[ligne.transporteur].push({
-        poidsMaxG: ligne.poidsMaxG,
-        prix: ligne.prix,
-      });
+      if (grille[ligne.transporteur]) {
+        grille[ligne.transporteur].push({
+          poidsMaxG: ligne.poidsMaxG,
+          prix: ligne.prix,
+        });
+      }
     }
 
     // Un transporteur sans palier enregistré garde ses valeurs par défaut,

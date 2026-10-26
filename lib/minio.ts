@@ -93,7 +93,11 @@ export async function lireFichier(bucket: string, cle: string): Promise<Buffer> 
   for await (const morceau of flux) {
     morceaux.push(morceau as Buffer);
   }
-  return Buffer.concat(morceaux);
+  const buffer = Buffer.concat(morceaux);
+  if (buffer.length === 0) {
+    throw new Error(`Fichier vide ou introuvable : ${bucket}/${cle}`);
+  }
+  return buffer;
 }
 
 /**

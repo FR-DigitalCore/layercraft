@@ -16,10 +16,14 @@ export function estStlValide(buffer: Buffer): boolean {
   }
 
   // ASCII — on n'inspecte que le début et la fin pour rester peu coûteux
-  const debut = buffer.subarray(0, 512).toString("utf8").trimStart().toLowerCase();
-  if (debut.startsWith("solid")) {
-    const echantillon = buffer.subarray(0, 65_536).toString("utf8").toLowerCase();
-    return echantillon.includes("facet normal") || echantillon.includes("endsolid");
+  try {
+    const debut = buffer.subarray(0, 512).toString("utf8").trimStart().toLowerCase();
+    if (debut.startsWith("solid")) {
+      const echantillon = buffer.subarray(0, Math.min(65_536, buffer.length)).toString("utf8").toLowerCase();
+      return echantillon.includes("facet normal") || echantillon.includes("endsolid");
+    }
+  } catch {
+    return false;
   }
 
   return false;
@@ -53,6 +57,9 @@ export function calculerVolumeCm3(buffer: Buffer): number | null {
     // 84 = en-tête ; +12 pour sauter le vecteur normal de la facette
     const base = 84 + i * 50 + 12;
 
+    // Vérifier que nous avons assez de données pour lire tous les floats
+    if (base + 36 > buffer.length) return null;
+
     const ax = buffer.readFloatLE(base);
     const ay = buffer.readFloatLE(base + 4);
     const az = buffer.readFloatLE(base + 8);
@@ -62,6 +69,13 @@ export function calculerVolumeCm3(buffer: Buffer): number | null {
     const cx = buffer.readFloatLE(base + 24);
     const cy = buffer.readFloatLE(base + 28);
     const cz = buffer.readFloatLE(base + 32);
+
+    // Vérifier que les valeurs sont des nombres valides
+    if (!Number.isFinite(ax) || !Number.isFinite(ay) || !Number.isFinite(az) ||
+        !Number.isFinite(bx) || !Number.isFinite(by) || !Number.isFinite(bz) ||
+        !Number.isFinite(cx) || !Number.isFinite(cy) || !Number.isFinite(cz)) {
+      return null;
+    }
 
     volumeMm3 +=
       (ax * (by * cz - bz * cy) -

@@ -58,7 +58,7 @@ export async function POST(request: Request) {
   const { website, ...donnees } = resultat.data;
 
   // Honeypot rempli : on répond 200 sans rien enregistrer, le bot ne réessaiera pas.
-  if (website) {
+  if (website && website.length > 0) {
     return NextResponse.json({ token: genererToken() });
   }
 
