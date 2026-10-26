@@ -11,6 +11,7 @@ import {
 import { formatPrix } from "@/lib/prix";
 import { Button } from "@/components/ui/Button";
 import { Aide, Erreur, Input, Label } from "@/components/ui/Field";
+import { AdresseBan } from "@/components/AdresseBan";
 import { cn } from "@/lib/cn";
 
 type PointRelais = {
@@ -27,6 +28,8 @@ export type EtatLivraison = {
   adresseLigne2: string;
   codePostal: string;
   ville: string;
+  /** Libellé complet renvoyé par la BAN, pour réaffichage. */
+  adresseLabel: string;
   pointRelaisId: string;
   pointRelaisNom: string;
 };
@@ -37,6 +40,7 @@ export const LIVRAISON_VIDE: EtatLivraison = {
   adresseLigne2: "",
   codePostal: "",
   ville: "",
+  adresseLabel: "",
   pointRelaisId: "",
   pointRelaisNom: "",
 };
@@ -115,7 +119,28 @@ export function ChoixLivraison({
                     name="livraison"
                     value={mode}
                     checked={actif}
-                    onChange={() => onChange({ mode })}
+                    onChange={() => {
+                      // Mondial Relay ne demande qu'une commune, Colissimo
+                      // une adresse complète : passer de l'un à l'autre rend
+                      // la saisie précédente inutilisable, on la réinitialise
+                      // plutôt que d'afficher une adresse sans rue.
+                      const granulariteChange =
+                        LIVRAISON_INFOS[mode].pointRelais !== infos.pointRelais;
+                      onChange(
+                        granulariteChange
+                          ? {
+                              mode,
+                              adresseLigne1: "",
+                              adresseLigne2: "",
+                              codePostal: "",
+                              ville: "",
+                              adresseLabel: "",
+                              pointRelaisId: "",
+                              pointRelaisNom: "",
+                            }
+                          : { mode },
+                      );
+                    }}
                     className="sr-only"
                   />
                   <span className="block font-semibold">{i.titre}</span>
@@ -143,30 +168,56 @@ export function ChoixLivraison({
 
       {infos.adresse && (
         <div className="space-y-4 rounded-xl border border-border bg-surface p-4">
-          <div className="grid gap-4 sm:grid-cols-[1fr_2fr]">
-            <div>
-              <Label htmlFor="codePostal">Code postal</Label>
-              <Input
-                id="codePostal"
-                value={etat.codePostal}
-                inputMode="numeric"
-                maxLength={5}
-                onChange={(e) =>
-                  onChange({ codePostal: e.target.value.replace(/\D/g, "") })
-                }
-              />
-            </div>
-            <div>
-              <Label htmlFor="ville">Ville</Label>
-              <Input
-                id="ville"
-                value={etat.ville}
-                onChange={(e) => onChange({ ville: e.target.value })}
-              />
-            </div>
-          </div>
+          <AdresseBan
+            modeCommune={infos.pointRelais}
+            adresse={
+              etat.codePostal && etat.ville
+                ? {
+                    ligne1: etat.adresseLigne1,
+                    codePostal: etat.codePostal,
+                    ville: etat.ville,
+                    label: etat.adresseLabel,
+                  }
+                : null
+            }
+            onChoisir={(a) =>
+              onChange({
+                adresseLigne1: a.ligne1,
+                codePostal: a.codePostal,
+                ville: a.ville,
+                adresseLabel: a.label,
+                // Changer de commune invalide le point relais déjà retenu.
+                pointRelaisId: "",
+                pointRelaisNom: "",
+              })
+            }
+            onEffacer={() =>
+              onChange({
+                adresseLigne1: "",
+                codePostal: "",
+                ville: "",
+                adresseLabel: "",
+                pointRelaisId: "",
+                pointRelaisNom: "",
+              })
+            }
+          />
 
-          {infos.pointRelais ? (
+          {!infos.pointRelais && etat.codePostal && (
+            <div>
+              <Label htmlFor="adresseLigne2" optionnel>
+                Complément — bâtiment, étage, code
+              </Label>
+              <Input
+                id="adresseLigne2"
+                value={etat.adresseLigne2}
+                autoComplete="address-line2"
+                onChange={(e) => onChange({ adresseLigne2: e.target.value })}
+              />
+            </div>
+          )}
+
+          {infos.pointRelais && etat.codePostal ? (
             <div>
               <Button
                 type="button"
@@ -238,30 +289,7 @@ export function ChoixLivraison({
                 </p>
               )}
             </div>
-          ) : (
-            <>
-              <div>
-                <Label htmlFor="adresseLigne1">Adresse</Label>
-                <Input
-                  id="adresseLigne1"
-                  value={etat.adresseLigne1}
-                  autoComplete="address-line1"
-                  onChange={(e) => onChange({ adresseLigne1: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="adresseLigne2" optionnel>
-                  Complément
-                </Label>
-                <Input
-                  id="adresseLigne2"
-                  value={etat.adresseLigne2}
-                  autoComplete="address-line2"
-                  onChange={(e) => onChange({ adresseLigne2: e.target.value })}
-                />
-              </div>
-            </>
-          )}
+          ) : null}
         </div>
       )}
     </div>
