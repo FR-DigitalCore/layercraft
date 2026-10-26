@@ -1,12 +1,24 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import Nodemailer from "next-auth/providers/nodemailer";
+import { PrismaAdapter } from "@auth/prisma-adapter";
 import bcrypt from "bcryptjs";
 import { authConfig } from "@/auth.config";
+import { prisma } from "@/lib/prisma";
+import { envoyerLienMagique } from "@/lib/emails";
+
+/** Durée de validité d'un lien magique. Court : il transite par email. */
+const DUREE_LIEN_MAGIQUE = 15 * 60; // secondes
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
+  // L'adaptateur stocke les comptes clients et les jetons des liens magiques.
+  // La session reste en JWT : le provider credentials de l'admin l'impose.
+  adapter: PrismaAdapter(prisma),
   providers: [
     Credentials({
+      id: "admin",
+      name: "Administration",
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Mot de passe", type: "password" },
@@ -29,8 +41,40 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const motDePasseOk = await bcrypt.compare(password, hash);
         if (email !== adminEmail || !motDePasseOk) return null;
 
-        return { id: "admin", email: adminEmail, name: "Administrateur" };
+        return { id: "admin", email: adminEmail, name: "Administrateur", role: "admin" };
+      },
+    }),
+    Nodemailer({
+      id: "lien-magique",
+      name: "Lien magique",
+      // Le transport SMTP n'est jamais utilisé : sendVerificationRequest est
+      // surchargé pour passer par Resend, déjà en place pour les devis.
+      server: { host: "localhost", port: 25 },
+      from: process.env.RESEND_FROM ?? "noreply@localhost",
+      maxAge: DUREE_LIEN_MAGIQUE,
+      async sendVerificationRequest({ identifier, url }) {
+        await envoyerLienMagique(identifier, url, DUREE_LIEN_MAGIQUE / 60);
       },
     }),
   ],
+  events: {
+    // Auth.js crée le compte avec email seul ; on récupère le nom déjà connu
+    // par une demande de devis pour personnaliser les pages client.
+    async createUser({ user }) {
+      if (!user.email) return;
+      const devis = await prisma.devis.findFirst({
+        where: { email: user.email },
+        orderBy: { createdAt: "desc" },
+        select: { nom: true },
+      });
+      if (devis?.nom) {
+        await prisma.user.update({ where: { id: user.id }, data: { name: devis.nom } });
+      }
+      // Rattache les demandes déjà envoyées avec cette adresse.
+      await prisma.devis.updateMany({
+        where: { email: user.email, userId: null },
+        data: { userId: user.id },
+      });
+    },
+  },
 });

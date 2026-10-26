@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
-import { auth } from "@/auth";
+import { exigerAdmin } from "@/lib/garde-admin";
 import { chargerGrille, enregistrerGrille } from "@/lib/tarifs";
 import { grilleTarifaireSchema, premiereErreur } from "@/lib/validation";
 import type { GrilleTarifaire } from "@/lib/prix";
@@ -8,18 +8,14 @@ import type { GrilleTarifaire } from "@/lib/prix";
 export const runtime = "nodejs";
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ erreur: "Non authentifié." }, { status: 401 });
-  }
+  const refus = await exigerAdmin();
+  if (refus) return refus;
   return NextResponse.json(await chargerGrille());
 }
 
 export async function PUT(request: Request) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ erreur: "Non authentifié." }, { status: 401 });
-  }
+  const refus = await exigerAdmin();
+  if (refus) return refus;
 
   let corps: unknown;
   try {

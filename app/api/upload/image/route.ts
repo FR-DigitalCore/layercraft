@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { exigerAdmin } from "@/lib/garde-admin";
 import { BUCKET_GALERIE, envoyerFichier, urlSignee } from "@/lib/minio";
 import { genererCleFichier } from "@/lib/tokens";
 import { detecterTypeImage, TAILLE_MAX_IMAGE } from "@/lib/images";
@@ -7,10 +7,8 @@ import { detecterTypeImage, TAILLE_MAX_IMAGE } from "@/lib/images";
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ erreur: "Non authentifié." }, { status: 401 });
-  }
+  const refus = await exigerAdmin();
+  if (refus) return refus;
 
   let formData: FormData;
   try {

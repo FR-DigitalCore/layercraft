@@ -3,6 +3,29 @@
 Le `README.md` à la racine est la spec produit. Ce document décrit comment faire
 tourner le code réellement présent dans le dépôt.
 
+## En une commande
+
+```bash
+./scripts/demarrer.sh            # ajoutez --avec-demo pour des données d'exemple
+```
+
+Le script crée le `.env`, génère le secret de session et un mot de passe
+administrateur, construit l'image, lance Postgres et MinIO, applique les
+migrations et démarre l'application. Il est relançable sans risque : rien
+n'est régénéré si c'est déjà en place. Les identifiants administrateur ne
+s'affichent qu'à la création — notez-les.
+
+Reste à renseigner à la main dans `.env`, selon vos besoins :
+
+| Variable | Sans elle |
+|---|---|
+| `ADMIN_EMAIL` | pas de connexion à l'administration |
+| `RESEND_API_KEY` | les emails sont loggés en console au lieu d'être envoyés |
+| `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | pas de paiement en ligne, encaissement hors ligne |
+| `MONDIAL_RELAY_ENSEIGNE`, `MONDIAL_RELAY_CLE_PRIVEE` | le client saisit son numéro de point relais au lieu de le choisir dans une liste |
+
+Tout le reste a des valeurs par défaut utilisables.
+
 ## Prérequis
 
 - Node.js 22+

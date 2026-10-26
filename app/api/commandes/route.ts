@@ -1,16 +1,14 @@
 import { NextResponse } from "next/server";
 import type { Prisma } from "@prisma/client";
-import { auth } from "@/auth";
+import { exigerAdmin } from "@/lib/garde-admin";
 import { prisma } from "@/lib/prisma";
 import { estStatutValide } from "@/lib/statuts";
 
 export const runtime = "nodejs";
 
 export async function GET(request: Request) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ erreur: "Non authentifié." }, { status: 401 });
-  }
+  const refus = await exigerAdmin();
+  if (refus) return refus;
 
   const { searchParams } = new URL(request.url);
   const statutBrut = searchParams.get("statut");

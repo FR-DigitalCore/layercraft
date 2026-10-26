@@ -18,7 +18,7 @@ const spaceGrotesk = Space_Grotesk({
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
   title: {
-    default: `Impression 3D Ain – Devis en ligne – ${site.nom}`,
+    default: `Impression 3D en ligne – Devis immédiat – ${site.nom}`,
     template: `%s – ${site.nom}`,
   },
   description: site.description,
@@ -26,13 +26,13 @@ export const metadata: Metadata = {
     type: "website",
     locale: "fr_FR",
     siteName: site.nom,
-    title: `Impression 3D Ain – Devis en ligne – ${site.nom}`,
+    title: `Impression 3D en ligne – Devis immédiat – ${site.nom}`,
     description: site.description,
     url: site.url,
   },
   twitter: {
     card: "summary_large_image",
-    title: `Impression 3D Ain – Devis en ligne – ${site.nom}`,
+    title: `Impression 3D en ligne – Devis immédiat – ${site.nom}`,
     description: site.description,
   },
 };

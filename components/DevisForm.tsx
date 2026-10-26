@@ -16,6 +16,20 @@ import {
   type Qualite,
 } from "@/lib/prix";
 import { formatTaille, TAILLE_MAX_STL } from "@/lib/stl";
+import type { ModeLivraison } from "@prisma/client";
+import {
+  calculerFraisPort,
+  estimerMasseG,
+  GRILLE_PORT_DEFAUT,
+  MODES_LIVRAISON,
+  type GrillePort,
+} from "@/lib/livraison";
+import { LIVRAISON_INFOS } from "@/lib/livraison";
+import {
+  ChoixLivraison,
+  LIVRAISON_VIDE,
+  type EtatLivraison,
+} from "@/components/ChoixLivraison";
 import { Button } from "@/components/ui/Button";
 import { Aide, Erreur, Input, Label, Textarea } from "@/components/ui/Field";
 import { cn } from "@/lib/cn";
@@ -40,9 +54,12 @@ const ETAPES = ["Votre fichier", "Configuration", "Contact"] as const;
 
 export function DevisForm({
   grille = GRILLE_DEFAUT,
+  grillePort = GRILLE_PORT_DEFAUT,
 }: {
   /** Grille tarifaire courante, chargée côté serveur depuis /admin/tarifs. */
   grille?: GrilleTarifaire;
+  /** Grille de port courante, chargée depuis /admin/livraison. */
+  grillePort?: GrillePort;
 }) {
   const router = useRouter();
   const params = useSearchParams();
@@ -72,6 +89,25 @@ export function DevisForm({
   const [telephone, setTelephone] = useState("");
   const [message, setMessage] = useState("");
   const [website, setWebsite] = useState(""); // honeypot
+  const [livraison, setLivraison] = useState<EtatLivraison>(LIVRAISON_VIDE);
+
+  const masseG = useMemo(
+    () => estimerMasseG({ matiere, quantite, volumeCm3: fichier?.volumeCm3 }, grille),
+    [matiere, quantite, fichier?.volumeCm3, grille],
+  );
+
+  const fraisParMode = useMemo(
+    () =>
+      Object.fromEntries(
+        MODES_LIVRAISON.map((mode) => [
+          mode,
+          calculerFraisPort(mode, masseG, grillePort),
+        ]),
+      ) as Record<ModeLivraison, number | null>,
+    [masseG, grillePort],
+  );
+
+  const fraisPort = fraisParMode[livraison.mode];
 
   const detail = useMemo(
     () =>
@@ -155,6 +191,13 @@ export function DevisForm({
           quantite,
           stlKey: fichier?.key,
           stlNom: fichier?.nom,
+          modeLivraison: livraison.mode,
+          adresseLigne1: livraison.adresseLigne1,
+          adresseLigne2: livraison.adresseLigne2,
+          codePostal: livraison.codePostal,
+          ville: livraison.ville,
+          pointRelaisId: livraison.pointRelaisId,
+          pointRelaisNom: livraison.pointRelaisNom,
           website,
         }),
       });
@@ -458,6 +501,15 @@ export function DevisForm({
               />
             </div>
 
+            <div className="border-t border-border pt-5">
+              <ChoixLivraison
+                etat={livraison}
+                onChange={(maj) => setLivraison((l) => ({ ...l, ...maj }))}
+                masseG={masseG}
+                fraisParMode={fraisParMode}
+              />
+            </div>
+
             {/* Honeypot anti-spam : invisible pour un humain */}
             <div aria-hidden className="absolute -left-[9999px] h-0 w-0 overflow-hidden">
               <label htmlFor="website">Ne pas remplir</label>
@@ -540,10 +592,29 @@ export function DevisForm({
           )}
         </dl>
 
+        <div className="mt-5 space-y-2.5 border-t border-border pt-5 text-sm">
+          <div className="flex justify-between gap-4">
+            <span className="text-muted">Impression</span>
+            <span className="font-medium">{formatPrix(detail.total)}</span>
+          </div>
+          <div className="flex justify-between gap-4">
+            <span className="text-muted">
+              {LIVRAISON_INFOS[livraison.mode].titre}
+            </span>
+            <span className="font-medium">
+              {fraisPort === null
+                ? "Sur devis"
+                : fraisPort === 0
+                  ? "Gratuit"
+                  : formatPrix(fraisPort)}
+            </span>
+          </div>
+        </div>
+
         <div className="mt-5 border-t border-border pt-5">
           <p className="text-xs text-muted">Estimation indicative</p>
           <p className="font-display mt-1 text-3xl font-bold text-accent">
-            {formatPrix(detail.total)}
+            {formatPrix(detail.total + (fraisPort ?? 0))}
           </p>
           <p className="mt-3 text-xs leading-relaxed text-muted">
             {detail.volumeEstime

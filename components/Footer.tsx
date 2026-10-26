@@ -37,14 +37,9 @@ export function Footer() {
         <div>
           <p className="mb-3 text-sm font-semibold">Zone de livraison</p>
           <p className="text-sm leading-relaxed text-muted">{site.zone}</p>
-          <a
-            href={site.mapsUrl}
-            target="_blank"
-            rel="noreferrer noopener"
-            className="mt-3 inline-block text-sm font-medium text-accent hover:underline"
-          >
-            Voir sur Google Maps →
-          </a>
+          <p className="mt-3 text-sm leading-relaxed text-muted">
+            Expédition Colissimo et Mondial Relay, ou retrait sur place.
+          </p>
         </div>
 
         <div>

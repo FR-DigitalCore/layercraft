@@ -30,9 +30,17 @@ export function Header() {
           ))}
         </nav>
 
-        <ButtonLink href="/devis" taille="sm">
-          Demander un devis
-        </ButtonLink>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/mon-compte"
+            className="hidden text-sm text-muted transition-colors hover:text-text sm:block"
+          >
+            Mon compte
+          </Link>
+          <ButtonLink href="/devis" taille="sm">
+            Demander un devis
+          </ButtonLink>
+        </div>
       </div>
     </header>
   );

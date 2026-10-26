@@ -34,6 +34,29 @@ const nextConfig: NextConfig = {
     // Le lint tourne en CI / en local via `npm run lint`, pas pendant le build image.
     ignoreDuringBuilds: true,
   },
+  // Posés par l'application plutôt que par Nginx seul : ils suivent alors le
+  // site partout, y compris en développement et derrière un autre proxy.
+  async headers() {
+    return [
+      {
+        source: "/:chemin*",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          {
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=(), payment=()",
+          },
+          {
+            // HSTS n'a d'effet qu'en HTTPS ; inoffensif en local.
+            key: "Strict-Transport-Security",
+            value: "max-age=31536000; includeSubDomains",
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

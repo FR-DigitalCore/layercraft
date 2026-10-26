@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { exigerAdmin } from "@/lib/garde-admin";
 import { prisma } from "@/lib/prisma";
 import { majCommandeSchema, premiereErreur } from "@/lib/validation";
 import { envoyerChangementStatut } from "@/lib/emails";
+import { creerSessionPaiement, stripeConfigure } from "@/lib/stripe";
 
 export const runtime = "nodejs";
 
@@ -10,10 +11,8 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ erreur: "Non authentifié." }, { status: 401 });
-  }
+  const refus = await exigerAdmin();
+  if (refus) return refus;
 
   const { id } = await params;
   const devis = await prisma.devis.findUnique({
@@ -31,10 +30,8 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ erreur: "Non authentifié." }, { status: 401 });
-  }
+  const refus = await exigerAdmin();
+  if (refus) return refus;
 
   const { id } = await params;
 
@@ -70,12 +67,33 @@ export async function PATCH(
     },
   });
 
+  // Passage à « Devis à régler » : c'est le moment où le client doit payer.
+  const demandePaiement = statutChange && devis.statut === "ACCEPTE";
+
+  if (demandePaiement && devis.prixFinal === null) {
+    return NextResponse.json(
+      { erreur: "Renseignez le prix ferme avant de passer le devis à régler." },
+      { status: 400 },
+    );
+  }
+
+  let lienPaiement: string | null = null;
+  if (demandePaiement && stripeConfigure()) {
+    try {
+      lienPaiement = await creerSessionPaiement(devis);
+    } catch (erreur) {
+      // Le devis reste à régler : le client pourra relancer le paiement
+      // depuis sa page de suivi, qui recrée une session à la demande.
+      console.error("[commandes] création de la session Stripe impossible", erreur);
+    }
+  }
+
   if (statutChange) {
     // L'email ne doit pas faire échouer la mise à jour déjà persistée.
-    await envoyerChangementStatut(devis).catch((erreur) =>
+    await envoyerChangementStatut(devis, lienPaiement).catch((erreur) =>
       console.error("[commandes] notification client échouée", erreur),
     );
   }
 
-  return NextResponse.json(devis);
+  return NextResponse.json({ ...devis, lienPaiement });
 }

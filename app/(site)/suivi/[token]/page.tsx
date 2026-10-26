@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { formatPrix, MATIERE_INFOS, QUALITE_INFOS, type Matiere, type Qualite } from "@/lib/prix";
 import { formatDate, STATUT_INFOS } from "@/lib/statuts";
 import { CommandeStatus } from "@/components/CommandeStatus";
+import { BoutonPaiement } from "@/components/BoutonPaiement";
+import { LIVRAISON_INFOS } from "@/lib/livraison";
 import { Badge, Card } from "@/components/ui/Card";
 import { ButtonLink } from "@/components/ui/Button";
 import { site } from "@/lib/site";
@@ -15,10 +17,13 @@ export const metadata: Metadata = {
 
 export default async function SuiviPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ token: string }>;
+  searchParams: Promise<{ paiement?: string }>;
 }) {
   const { token } = await params;
+  const { paiement } = await searchParams;
 
   const devis = await prisma.devis
     .findUnique({
@@ -28,6 +33,10 @@ export default async function SuiviPage({
     .catch(() => null);
 
   if (!devis) notFound();
+
+  const total = (devis.prixFinal ?? 0) + (devis.fraisPort ?? 0);
+  const aRegler = devis.statut === "ACCEPTE" && devis.prixFinal !== null && !devis.payeLe;
+  const paiementAnnule = paiement === "annule" && !devis.payeLe;
 
   const infos = STATUT_INFOS[devis.statut];
   const matiere = MATIERE_INFOS[devis.matiere as Matiere];
@@ -72,15 +81,55 @@ export default async function SuiviPage({
                 valeur={formatPrix(devis.prixFinal)}
                 accent={devis.prixFinal !== null}
               />
+              <Ligne
+                label={LIVRAISON_INFOS[devis.modeLivraison].titre}
+                valeur={
+                  devis.fraisPort === null
+                    ? "Sur devis"
+                    : devis.fraisPort === 0
+                      ? "Gratuit"
+                      : formatPrix(devis.fraisPort)
+                }
+              />
+              {aRegler && (
+                <Ligne label="Total à régler" valeur={formatPrix(total)} accent />
+              )}
             </dl>
             {devis.prixFinal === null && (
               <p className="mt-3 text-xs leading-relaxed text-muted">
                 Le devis ferme apparaîtra ici dès que votre pièce aura été étudiée.
               </p>
             )}
+            {devis.payeLe && (
+              <p className="mt-3 text-xs leading-relaxed text-emerald-400">
+                Réglé le {formatDate(devis.payeLe)}.
+              </p>
+            )}
           </Card>
         </div>
       </div>
+
+      {aRegler && (
+        <Card className="mt-8 flex flex-col items-start gap-5 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold">Votre devis est prêt</h2>
+            <p className="mt-1 text-sm text-muted">
+              Le règlement lance la production. Impression {formatPrix(devis.prixFinal)}
+              {devis.fraisPort ? ` + ${formatPrix(devis.fraisPort)} de livraison` : ""}.
+            </p>
+          </div>
+          <BoutonPaiement token={devis.token} montant={total} />
+        </Card>
+      )}
+
+      {paiementAnnule && (
+        <Card className="mt-8 border-amber-500/30 bg-amber-500/5">
+          <p className="text-sm">
+            Paiement interrompu. Rien n&apos;a été débité, vous pouvez reprendre quand
+            vous voulez.
+          </p>
+        </Card>
+      )}
 
       {devis.noteAdmin && (
         <Card className="mt-8">

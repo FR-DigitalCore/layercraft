@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { devisSchema, premiereErreur } from "@/lib/validation";
 import { estimerPrix } from "@/lib/prix";
 import { chargerGrille } from "@/lib/tarifs";
+import { chargerGrillePort } from "@/lib/tarifs-livraison";
+import { calculerFraisPort, estimerMasseG } from "@/lib/livraison";
 import { BUCKET_STL, lireFichier } from "@/lib/minio";
 import { calculerVolumeCm3 } from "@/lib/stl";
 import { genererToken } from "@/lib/tokens";
@@ -63,14 +65,40 @@ export async function POST(request: Request) {
   try {
     // Prix et volume sont toujours recalculés côté serveur : les valeurs
     // affichées au client ne sont jamais reprises telles quelles.
-    const grille = await chargerGrille();
+    const [grille, grillePort] = await Promise.all([
+      chargerGrille(),
+      chargerGrillePort(),
+    ]);
     const volumeCm3 = donnees.stlKey ? await mesurerVolume(donnees.stlKey) : null;
+
+    const masseG = estimerMasseG(
+      { matiere: donnees.matiere, quantite: donnees.quantite, volumeCm3 },
+      grille,
+    );
+    // null quand la masse sort de la grille : le port est alors chiffré à la
+    // main par l'atelier, plutôt que facturé à un tarif inventé.
+    const fraisPort = calculerFraisPort(donnees.modeLivraison, masseG, grillePort);
+
+    // Le compte client est créé à la volée : la personne n'a rien à faire,
+    // ses demandes se regroupent et elle pourra se connecter plus tard avec
+    // cette adresse. Aucun mot de passe n'est généré ni stocké.
+    const emailNormalise = donnees.email.trim().toLowerCase();
+    const user = await prisma.user.upsert({
+      where: { email: emailNormalise },
+      create: { email: emailNormalise, name: donnees.nom },
+      update: {},
+      select: { id: true },
+    });
 
     const devis = await prisma.devis.create({
       data: {
         ...donnees,
+        email: emailNormalise,
+        userId: user.id,
         token: genererToken(),
         volumeCm3,
+        masseG,
+        fraisPort,
         prixEstime: estimerPrix(
           {
             matiere: donnees.matiere,

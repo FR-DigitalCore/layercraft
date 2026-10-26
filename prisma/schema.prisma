@@ -16,6 +16,12 @@ model Devis {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  /// Compte client rattaché. Créé à la volée depuis l'email de la demande :
+  /// le client n'a rien à faire pour que ses devis se regroupent, il lui
+  /// suffit ensuite de se connecter avec cette adresse.
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
   // Contact
   nom       String
   email     String
@@ -35,16 +41,54 @@ model Devis {
   /// Volume de matière mesuré sur le STL, en cm³ (null si aucun fichier).
   volumeCm3 Float?
 
+  // Livraison
+  modeLivraison   ModeLivraison @default(RETRAIT)
+  adresseLigne1   String?
+  adresseLigne2   String?
+  codePostal      String?
+  ville           String?
+  pays            String        @default("FR")
+  /// Point relais Mondial Relay retenu par le client
+  pointRelaisId   String?
+  pointRelaisNom  String?
+  /// Masse estimée de la commande, en grammes, qui détermine le tarif de port
+  masseG          Float?
+  fraisPort       Float?
+
   // Suivi
   statut     Statut  @default(RECU)
   prixEstime Float?
   prixFinal  Float?
   noteAdmin  String?
 
+  // Paiement Stripe
+  stripeSessionId       String?   @unique
+  stripePaymentIntentId String?
+  payeLe                DateTime?
+
   evenements EvenementDevis[]
 
   @@index([email])
   @@index([statut])
+  @@index([userId])
+}
+
+enum ModeLivraison {
+  RETRAIT
+  COLISSIMO
+  MONDIAL_RELAY
+}
+
+/// Grille de port au poids, éditable depuis /admin/livraison.
+/// Le palier retenu est le plus petit poidsMaxG qui couvre la masse.
+model TarifLivraison {
+  id           String        @id @default(cuid())
+  transporteur ModeLivraison
+  poidsMaxG    Int
+  prix         Float
+  updatedAt    DateTime      @updatedAt
+
+  @@unique([transporteur, poidsMaxG])
 }
 
 /// Historique des changements de statut, utilisé par la timeline de /suivi/[token]
@@ -62,11 +106,70 @@ model EvenementDevis {
 enum Statut {
   RECU
   EN_ETUDE
+  /// Devis chiffré et envoyé : en attente du règlement par le client.
   ACCEPTE
+  PAYE
   EN_IMPRESSION
   TERMINE
   EXPEDIE
   ANNULE
+}
+
+/// Comptes clients (Auth.js). La connexion se fait par lien magique :
+/// aucun mot de passe n'est stocké. L'administrateur, lui, reste hors base,
+/// authentifié par les variables d'environnement.
+/// Les noms de champs suivent le contrat de l'adaptateur Auth.js
+/// (name, emailVerified, image) : il mappe dessus littéralement, les
+/// renommer en français casse la création de compte.
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+
+  devis    Devis[]
+  comptes  Account[]
+  sessions Session[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+/// Jetons des liens magiques. Auth.js les supprime à la première
+/// utilisation : un lien ne sert qu'une fois.
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
 }
 
 /// Grille tarifaire éditable depuis /admin/tarifs.
