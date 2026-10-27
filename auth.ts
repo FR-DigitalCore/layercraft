@@ -1,6 +1,6 @@
 import NextAuth from "next-auth";
+import type { EmailConfig } from "@auth/core/providers/email";
 import Credentials from "next-auth/providers/credentials";
-import Nodemailer from "next-auth/providers/nodemailer";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import bcrypt from "bcryptjs";
 import { authConfig } from "@/auth.config";
@@ -44,18 +44,21 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         return { id: "admin", email: adminEmail, name: "Administrateur", role: "admin" };
       },
     }),
-    Nodemailer({
+    // Provider email sur mesure plutôt que celui fourni par Nodemailer :
+    // l'envoi passe par Resend, le transport SMTP n'aurait jamais servi, et
+    // s'en passer retire du projet une dépendance vulnérable et sans
+    // correctif disponible.
+    {
       id: "lien-magique",
       name: "Lien magique",
-      // Le transport SMTP n'est jamais utilisé : sendVerificationRequest est
-      // surchargé pour passer par Resend, déjà en place pour les devis.
-      server: { host: "localhost", port: 25 },
+      type: "email",
       from: process.env.RESEND_FROM ?? "noreply@localhost",
       maxAge: DUREE_LIEN_MAGIQUE,
+      options: {},
       async sendVerificationRequest({ identifier, url }) {
         await envoyerLienMagique(identifier, url, DUREE_LIEN_MAGIQUE / 60);
       },
-    }),
+    } satisfies EmailConfig,
   ],
   events: {
     // Auth.js crée le compte avec email seul ; on récupère le nom déjà connu
