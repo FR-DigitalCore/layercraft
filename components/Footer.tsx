@@ -56,6 +56,11 @@ export function Footer() {
               </Link>
             </li>
             <li>
+              <Link href="/cgv" className="hover:text-text">
+                Conditions générales de vente
+              </Link>
+            </li>
+            <li>
               <Link href="/mentions-legales" className="hover:text-text">
                 Mentions légales
               </Link>

@@ -19,6 +19,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.9,
     },
     {
+      url: `${site.url}/cgv`,
+      lastModified: maintenant,
+      changeFrequency: "yearly",
+      priority: 0.3,
+    },
+    {
       url: `${site.url}/mentions-legales`,
       lastModified: maintenant,
       changeFrequency: "yearly",
