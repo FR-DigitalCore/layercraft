@@ -214,7 +214,7 @@ export function detaillerPrix(
       volumeCm3,
       masseG: null,
       heures: null,
-      volumeEstime: false,
+      volumeEstime: volumeFourni === null,
     };
   }
 

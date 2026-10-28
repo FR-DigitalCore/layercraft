@@ -79,7 +79,7 @@ export async function envoyerConfirmationClient(devis: Devis): Promise<boolean> 
        <p style="font-size:13px;line-height:1.6;color:#777">
          Vous pouvez aussi retrouver toutes vos demandes au même endroit en vous
          connectant avec cette adresse email, sans mot de passe :
-         <a href="${site.url}/connexion" style="color:#ff6b2b">${site.url}/connexion</a>
+         <a href="${echapper(site.url)}/connexion" style="color:#ff6b2b">${echapper(site.url)}/connexion</a>
        </p>`,
     ),
   });
@@ -107,7 +107,7 @@ export async function envoyerNotificationAdmin(devis: Devis): Promise<boolean> {
            ? `<p style="font-size:14px;line-height:1.6;color:#444;background:#f7f6f4;padding:12px;border-radius:8px;white-space:pre-wrap">${echapper(devis.message)}</p>`
            : ""
        }
-       <p style="margin:24px 0 0">${bouton(`${site.url}/admin/commandes/${devis.id}`, "Ouvrir dans l'admin")}</p>`,
+       <p style="margin:24px 0 0">${bouton(echapper(`${site.url}/admin/commandes/${devis.id}`), "Ouvrir dans l'admin")}</p>`,
     ),
   });
 }
@@ -140,7 +140,7 @@ export async function envoyerChangementStatut(
            ? `<p style="font-size:14px;line-height:1.6;color:#444;background:#f7f6f4;padding:12px;border-radius:8px;white-space:pre-wrap">${echapper(devis.noteAdmin)}</p>`
            : ""
        }
-       <p style="margin:24px 0 0">${bouton(urlSuivi(devis.token), "Voir le suivi")}</p>`,
+       <p style="margin:24px 0 0">${bouton(echapper(urlSuivi(devis.token)), "Voir le suivi")}</p>`,
     ),
   });
 }
