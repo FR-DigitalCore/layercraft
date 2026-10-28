@@ -3,8 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { devisSchema, premiereErreur } from "@/lib/validation";
 import { estimerPrix } from "@/lib/prix";
 import { chargerGrille } from "@/lib/tarifs";
-import { chargerGrillePort } from "@/lib/tarifs-livraison";
-import { calculerFraisPort, estimerMasseG } from "@/lib/livraison";
+import { chargerConfigLivraison } from "@/lib/tarifs-livraison";
+import { calculerFraisPort, estimerMasseG, modesDisponibles } from "@/lib/livraison";
 import { BUCKET_STL, lireFichier } from "@/lib/minio";
 import { calculerVolumeCm3 } from "@/lib/stl";
 import { genererToken } from "@/lib/tokens";
@@ -65,10 +65,19 @@ export async function POST(request: Request) {
   try {
     // Prix et volume sont toujours recalculés côté serveur : les valeurs
     // affichées au client ne sont jamais reprises telles quelles.
-    const [grille, grillePort] = await Promise.all([
+    const [grille, configLivraison] = await Promise.all([
       chargerGrille(),
-      chargerGrillePort(),
+      chargerConfigLivraison(),
     ]);
+
+    // Un mode désactivé en admin ne doit pas pouvoir être soumis directement,
+    // sans quoi le client choisirait une livraison que l'atelier n'assure pas.
+    if (!modesDisponibles(configLivraison.actifs).includes(donnees.modeLivraison)) {
+      return NextResponse.json(
+        { erreur: "Ce mode de livraison n'est pas disponible." },
+        { status: 400 },
+      );
+    }
     const volumeCm3 = donnees.stlKey ? await mesurerVolume(donnees.stlKey) : null;
 
     const masseG = estimerMasseG(
@@ -77,7 +86,11 @@ export async function POST(request: Request) {
     );
     // null quand la masse sort de la grille : le port est alors chiffré à la
     // main par l'atelier, plutôt que facturé à un tarif inventé.
-    const fraisPort = calculerFraisPort(donnees.modeLivraison, masseG, grillePort);
+    const fraisPort = calculerFraisPort(
+      donnees.modeLivraison,
+      masseG,
+      configLivraison.grille,
+    );
 
     // Le compte client est créé à la volée : la personne n'a rien à faire,
     // ses demandes se regroupent et elle pourra se connecter plus tard avec

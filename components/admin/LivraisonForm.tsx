@@ -9,7 +9,9 @@ import {
   GRILLE_PORT_DEFAUT,
   LIVRAISON_INFOS,
   MODES_LIVRAISON,
+  TRANSPORTEURS_ACTIFS_DEFAUT,
   type GrillePort,
+  type TransporteursActifs,
 } from "@/lib/livraison";
 import { formatPrix } from "@/lib/prix";
 import { Button } from "@/components/ui/Button";
@@ -48,11 +50,21 @@ function versGrille(b: Brouillon): GrillePort {
   ) as GrillePort;
 }
 
-export function LivraisonForm({ grilleInitiale }: { grilleInitiale: GrillePort }) {
+export function LivraisonForm({
+  grilleInitiale,
+  actifsInitiaux,
+  mondialRelayConfigure,
+}: {
+  grilleInitiale: GrillePort;
+  actifsInitiaux: TransporteursActifs;
+  /** Les identifiants Mondial Relay sont-ils renseignés côté serveur ? */
+  mondialRelayConfigure: boolean;
+}) {
   const router = useRouter();
   const [brouillon, setBrouillon] = useState<Brouillon>(() =>
     versBrouillon(grilleInitiale),
   );
+  const [actifs, setActifs] = useState<TransporteursActifs>(actifsInitiaux);
   const [erreur, setErreur] = useState<string | null>(null);
   const [etat, setEtat] = useState<"repos" | "envoi" | "ok">("repos");
   const [simMasse, setSimMasse] = useState("450");
@@ -72,7 +84,7 @@ export function LivraisonForm({ grilleInitiale }: { grilleInitiale: GrillePort }
       const reponse = await fetch("/api/livraison", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(grille),
+        body: JSON.stringify({ grille, actifs }),
       });
       const corps = await reponse.json();
       if (!reponse.ok) throw new Error(corps.erreur ?? "Enregistrement impossible.");
@@ -89,7 +101,32 @@ export function LivraisonForm({ grilleInitiale }: { grilleInitiale: GrillePort }
       <div className="space-y-6">
         {MODES_LIVRAISON.map((mode) => (
           <Card key={mode}>
-            <h2 className="text-lg font-semibold">{LIVRAISON_INFOS[mode].titre}</h2>
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <h2 className="text-lg font-semibold">{LIVRAISON_INFOS[mode].titre}</h2>
+              <label className="flex cursor-pointer items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={actifs[mode]}
+                  disabled={mode === "RETRAIT"}
+                  onChange={(e) => {
+                    setActifs((a) => ({ ...a, [mode]: e.target.checked }));
+                    setEtat("repos");
+                  }}
+                  className="size-4 accent-[var(--accent)]"
+                />
+                <span className={actifs[mode] ? "font-medium" : "text-muted"}>
+                  {actifs[mode] ? "Proposé aux clients" : "Masqué"}
+                </span>
+              </label>
+            </div>
+
+            {mode === "MONDIAL_RELAY" && !mondialRelayConfigure && actifs[mode] && (
+              <p className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-xs leading-relaxed">
+                Les identifiants Mondial Relay ne sont pas renseignés. Le mode
+                reste proposé, mais le client devra saisir son numéro de point
+                relais à la main.
+              </p>
+            )}
             <Aide>
               Le palier retenu est le premier dont le poids maximum couvre la masse du
               colis. Au-delà du dernier palier, le port est annoncé « sur devis ».
@@ -184,7 +221,10 @@ export function LivraisonForm({ grilleInitiale }: { grilleInitiale: GrillePort }
           <Button
             type="button"
             variante="fantome"
-            onClick={() => modifier(() => versBrouillon(GRILLE_PORT_DEFAUT))}
+            onClick={() => {
+              modifier(() => versBrouillon(GRILLE_PORT_DEFAUT));
+              setActifs(TRANSPORTEURS_ACTIFS_DEFAUT);
+            }}
           >
             Revenir aux valeurs par défaut
           </Button>
@@ -218,8 +258,15 @@ export function LivraisonForm({ grilleInitiale }: { grilleInitiale: GrillePort }
             const prix = calculerFraisPort(mode, masse, grille);
             return (
               <li key={mode} className="flex justify-between gap-4">
-                <span className="text-muted">{LIVRAISON_INFOS[mode].titre}</span>
-                <span className="font-medium tabular-nums">
+                <span className="text-muted">
+                  {LIVRAISON_INFOS[mode].titre}
+                  {!actifs[mode] && " (masqué)"}
+                </span>
+                <span
+                  className={
+                    actifs[mode] ? "font-medium tabular-nums" : "tabular-nums text-muted/50"
+                  }
+                >
                   {prix === null ? "Sur devis" : prix === 0 ? "Gratuit" : formatPrix(prix)}
                 </span>
               </li>

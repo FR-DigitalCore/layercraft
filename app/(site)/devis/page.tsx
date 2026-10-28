@@ -3,7 +3,8 @@ import type { Metadata } from "next";
 import { DevisForm } from "@/components/DevisForm";
 import { TitreSection } from "@/components/ui/Card";
 import { chargerGrille } from "@/lib/tarifs";
-import { chargerGrillePort } from "@/lib/tarifs-livraison";
+import { chargerConfigLivraison } from "@/lib/tarifs-livraison";
+import { modesDisponibles } from "@/lib/livraison";
 
 export const metadata: Metadata = {
   title: "Demander un devis",
@@ -16,9 +17,9 @@ export const metadata: Metadata = {
 export const revalidate = 3600;
 
 export default async function DevisPage() {
-  const [grille, grillePort] = await Promise.all([
+  const [grille, configLivraison] = await Promise.all([
     chargerGrille(),
-    chargerGrillePort(),
+    chargerConfigLivraison(),
   ]);
 
   return (
@@ -33,7 +34,11 @@ export default async function DevisPage() {
           <div className="mt-10 h-96 animate-pulse rounded-xl border border-border bg-surface" />
         }
       >
-        <DevisForm grille={grille} grillePort={grillePort} />
+        <DevisForm
+          grille={grille}
+          grillePort={configLivraison.grille}
+          modesLivraison={modesDisponibles(configLivraison.actifs)}
+        />
       </Suspense>
     </div>
   );

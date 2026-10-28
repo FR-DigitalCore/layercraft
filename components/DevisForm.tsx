@@ -55,11 +55,14 @@ const ETAPES = ["Votre fichier", "Configuration", "Contact"] as const;
 export function DevisForm({
   grille = GRILLE_DEFAUT,
   grillePort = GRILLE_PORT_DEFAUT,
+  modesLivraison = MODES_LIVRAISON,
 }: {
   /** Grille tarifaire courante, chargée côté serveur depuis /admin/tarifs. */
   grille?: GrilleTarifaire;
   /** Grille de port courante, chargée depuis /admin/livraison. */
   grillePort?: GrillePort;
+  /** Transporteurs activés en admin. */
+  modesLivraison?: ModeLivraison[];
 }) {
   const router = useRouter();
   const params = useSearchParams();
@@ -89,7 +92,11 @@ export function DevisForm({
   const [telephone, setTelephone] = useState("");
   const [message, setMessage] = useState("");
   const [website, setWebsite] = useState(""); // honeypot
-  const [livraison, setLivraison] = useState<EtatLivraison>(LIVRAISON_VIDE);
+  const [livraison, setLivraison] = useState<EtatLivraison>(() => ({
+    ...LIVRAISON_VIDE,
+    // Le mode par défaut doit faire partie des modes proposés.
+    mode: modesLivraison[0] ?? "RETRAIT",
+  }));
 
   const masseG = useMemo(
     () => estimerMasseG({ matiere, quantite, volumeCm3: fichier?.volumeCm3 }, grille),
@@ -507,6 +514,7 @@ export function DevisForm({
                 onChange={(maj) => setLivraison((l) => ({ ...l, ...maj }))}
                 masseG={masseG}
                 fraisParMode={fraisParMode}
+                modes={modesLivraison}
               />
             </div>
 

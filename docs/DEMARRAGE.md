@@ -284,6 +284,17 @@ partir reviendrait à recopier un secret dans les statistiques. Sont exclus
 d'ailleurs chargé que sur les pages publiques.
 
 
+## Transporteurs
+
+Chaque transporteur s'active ou se masque depuis `/admin/livraison`. Un
+transporteur masqué disparaît du configurateur, du pied de page, et est refusé
+côté serveur si quelqu'un tente de le soumettre directement. Le retrait sur
+place ne peut pas être désactivé : il sert de filet pour qu'une commande reste
+toujours possible.
+
+**Mondial Relay est désactivé par défaut**, parce qu'il exige des identifiants
+obtenus au contrat. Activez-le une fois ceux-ci renseignés et vérifiés.
+
 ## Mondial Relay
 
 L'API officielle est gratuite : elle vient avec le compte professionnel, vous
