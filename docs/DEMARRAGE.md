@@ -229,6 +229,60 @@ qualité — approximation volontairement simple, à calibrer sur vos temps rée
 
 Modifier la grille n'a aucun effet sur les devis déjà enregistrés.
 
+
+## Pages légales
+
+`lib/entreprise.ts` centralise toutes les informations légales. Tant qu'un
+champ garde sa valeur `[À COMPLÉTER …]`, un bandeau d'avertissement s'affiche
+en haut des pages légales et liste ce qui manque. Il disparaît de lui-même une
+fois le fichier rempli — rien d'autre à toucher.
+
+Trois pages sont servies : `/mentions-legales`, `/confidentialite` et `/cgv`.
+Les CGV sont obligatoires dès lors que le site encaisse des paiements ; elles
+couvrent notamment l'exclusion du droit de rétractation pour les pièces
+fabriquées sur mesure (art. L.221-28 3° du code de la consommation).
+
+**Ces textes sont une base sérieuse, pas un avis juridique.** Faites-les relire
+avant l'ouverture, en particulier les durées de conservation et les clauses de
+garantie, qui dépendent de votre activité réelle.
+
+## Mesure d'audience
+
+Umami, sans cookie ni identifiant persistant, donc sans bandeau de
+consentement à afficher. Deux variables suffisent à l'activer :
+
+```env
+NEXT_PUBLIC_UMAMI_URL="https://umami.votredomaine.fr"
+NEXT_PUBLIC_UMAMI_WEBSITE_ID="<identifiant donné par Umami>"
+```
+
+Sans elles, aucun script n'est chargé. Ce sont des variables `NEXT_PUBLIC_*` :
+elles sont figées dans le bundle au build, donc `docker compose build` est
+nécessaire après les avoir renseignées.
+
+Pour héberger Umami vous-même, à côté de l'application :
+
+```bash
+docker compose --profile mesure up -d umami   # écoute sur 127.0.0.1:3001
+```
+
+Sa base `umami` est créée au premier démarrage du volume Postgres. Sur une
+installation déjà en place, créez-la à la main :
+
+```bash
+docker compose exec postgres psql -U user -c 'CREATE DATABASE umami;'
+```
+
+Identifiants Umami par défaut : `admin` / `umami` — à changer immédiatement.
+
+### Ce qui n'est pas mesuré
+
+Le suivi automatique d'Umami est désactivé et les vues sont envoyées à la
+main, car les URL de suivi contiennent le jeton de commande : les laisser
+partir reviendrait à recopier un secret dans les statistiques. Sont exclus
+`/suivi`, `/mon-compte`, `/connexion`, `/admin` et `/api`. Le script n'est
+d'ailleurs chargé que sur les pages publiques.
+
 ## Ce qui reste à faire
 
 - Vérification de bout en bout avec Postgres et MinIO réels, **y compris

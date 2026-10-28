@@ -5,6 +5,8 @@ services:
       args:
         # Figée dans le bundle client au build : doit valoir le domaine public.
         NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+        NEXT_PUBLIC_UMAMI_URL: ${NEXT_PUBLIC_UMAMI_URL:-}
+        NEXT_PUBLIC_UMAMI_WEBSITE_ID: ${NEXT_PUBLIC_UMAMI_WEBSITE_ID:-}
     restart: unless-stopped
     env_file: .env
     environment:
@@ -70,6 +72,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./deploy/init-umami-db.sql:/docker-entrypoint-initdb.d/10-umami.sql:ro
     ports:
       # Jamais exposé publiquement : accès par tunnel SSH si besoin.
       # POSTGRES_HOST_PORT ne change que le port côté hôte (utile si un
@@ -105,6 +108,25 @@ services:
       timeout: 5s
       retries: 12
       start_period: 15s
+
+  # Mesure d'audience auto-hébergée. Profil « mesure » : `docker compose
+  # --profile mesure up -d`. Sa base vit dans le même Postgres, sous le nom
+  # `umami`, créée au premier démarrage du volume par deploy/init-umami-db.sql.
+  umami:
+    image: ghcr.io/umami-software/umami:postgresql-latest
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD:-password}@postgres:5432/umami
+      DATABASE_TYPE: postgresql
+      APP_SECRET: ${UMAMI_APP_SECRET:-changez-ce-secret}
+      # Umami envoie sinon des statistiques d'usage à ses auteurs.
+      DISABLE_TELEMETRY: "1"
+    ports:
+      - "127.0.0.1:${UMAMI_HOST_PORT:-3001}:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles: ["mesure"]
 
 volumes:
   pgdata:

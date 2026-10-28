@@ -4,10 +4,20 @@ import type { ReactNode } from "react";
  * Mise en page des pages de texte long (mentions légales, confidentialité).
  * Styles au niveau du conteneur pour éviter d'ajouter le plugin typography.
  */
-export function Prose({ titre, children }: { titre: string; children: ReactNode }) {
+export function Prose({
+  titre,
+  avant,
+  children,
+}: {
+  titre: string;
+  /** Inséré entre le titre et le corps : bandeaux, dates de mise à jour. */
+  avant?: ReactNode;
+  children: ReactNode;
+}) {
   return (
     <div className="conteneur max-w-3xl py-16">
       <h1 className="text-3xl font-bold sm:text-4xl">{titre}</h1>
+      {avant}
       <div
         className="mt-10 space-y-4 text-sm leading-relaxed text-muted
           [&_a]:text-accent [&_a:hover]:underline

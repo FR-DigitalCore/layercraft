@@ -55,6 +55,12 @@ export const authConfig = {
       const role = auth?.user?.role;
       const connecte = Boolean(auth?.user);
 
+      // La page de connexion de l'administration est dans /admin mais doit
+      // rester ouverte, sans quoi l'administrateur est renvoyé vers la
+      // connexion client — qui ne propose pas de mot de passe — et ne peut
+      // plus entrer du tout.
+      if (chemin === "/admin/login") return true;
+
       const zonesAdmin = [
         "/admin",
         "/api/commandes",
@@ -81,7 +87,10 @@ export const authConfig = {
         // Un client connecté n'a rien à faire dans l'admin : on ne le renvoie
         // pas vers une page de connexion qu'il a déjà passée.
         if (connecte) return NextResponse.rewrite(new URL("/404", request.url));
-        return false;
+        // Vers la connexion administrateur, et non vers `pages.signIn` qui
+        // mène au lien magique client : celui-ci ne donne jamais le rôle
+        // admin, l'administrateur y tournerait en rond.
+        return NextResponse.redirect(new URL("/admin/login", request.url));
       }
 
       if (protegee(zonesClient)) {
