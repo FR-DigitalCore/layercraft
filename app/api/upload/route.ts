@@ -50,7 +50,15 @@ export async function POST(request: Request) {
     );
   }
 
-  const buffer = Buffer.from(await fichier.arrayBuffer());
+  let buffer: Buffer;
+  try {
+    buffer = Buffer.from(await fichier.arrayBuffer());
+  } catch {
+    return NextResponse.json(
+      { erreur: "Impossible de lire le fichier. Vérifiez son intégrité." },
+      { status: 400 },
+    );
+  }
 
   if (!estStlValide(buffer)) {
     return NextResponse.json(
