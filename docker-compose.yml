@@ -1,41 +1,30 @@
-# Dans le réseau Compose, les services se joignent par leur NOM et sur leur
-# port INTERNE. Les variables *_HOST_PORT plus bas ne concernent que la
-# machine hôte : les changer ne doit jamais toucher ces adresses-là, sous
-# peine d'un ECONNREFUSED côté conteneur.
-x-url-base: &url-base
-  DATABASE_URL: postgresql://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD:-password}@postgres:5432/${POSTGRES_DB:-impression3d}
-
-# Figées dans le bundle client au build. `app` et `migrate` partagent la même
-# liste : des valeurs différentes feraient reconstruire l'étape `builder`
-# deux fois, l'image des migrations en dérivant aussi.
-x-args-build: &args-build
-  NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
-  NEXT_PUBLIC_UMAMI_URL: ${NEXT_PUBLIC_UMAMI_URL:-}
-  NEXT_PUBLIC_UMAMI_WEBSITE_ID: ${NEXT_PUBLIC_UMAMI_WEBSITE_ID:-}
-
 services:
   app:
+    container_name: layercraft-app
     build:
       context: .
-      args: *args-build
+      args:
+        # Figées dans le bundle client au build.
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+        NEXT_PUBLIC_UMAMI_URL: ${NEXT_PUBLIC_UMAMI_URL:-}
+        NEXT_PUBLIC_UMAMI_WEBSITE_ID: ${NEXT_PUBLIC_UMAMI_WEBSITE_ID:-}
     restart: unless-stopped
     env_file: .env
     environment:
-      <<: *url-base
+      # Noms de service et ports INTERNES. Les *_HOST_PORT plus bas ne
+      # concernent que la machine hôte et ne changent jamais ces lignes.
+      DATABASE_URL: postgresql://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD:-password}@postgres:5432/${POSTGRES_DB:-impression3d}
       MINIO_ENDPOINT: minio
       MINIO_PORT: "9000"
       MINIO_USE_SSL: "false"
-      # Le navigateur, lui, ne sait pas résoudre `minio` : les presigned URLs
-      # sont signées sur l'hôte public. En local, la boucle locale du poste
-      # sur le port publié ci-dessous.
+      # Le navigateur, lui, ne résout pas `minio` : les liens signés le sont
+      # sur l'hôte public.
       MINIO_PUBLIC_ENDPOINT: ${MINIO_PUBLIC_ENDPOINT:-localhost}
       MINIO_PUBLIC_PORT: ${MINIO_PUBLIC_PORT:-${MINIO_HOST_PORT:-9000}}
       MINIO_PUBLIC_USE_SSL: ${MINIO_PUBLIC_USE_SSL:-false}
     ports:
-      # Boucle locale seulement : sert au débogage et aux tunnels SSH. Un
-      # reverse proxy conteneurisé ne passe pas par là, il vise app:3000 par
-      # le réseau (voir deploy/docker-compose.proxy.yml).
       - "127.0.0.1:${APP_HOST_PORT:-3000}:3000"
+    networks: [default, proxy]
     depends_on:
       postgres:
         condition: service_healthy
@@ -49,21 +38,26 @@ services:
       start_period: 20s
 
   # Migrations : `docker compose run --rm migrate`
-  # Étape d'image dédiée, qui garde node_modules en entier : le CLI Prisma a
-  # besoin de ses dépendances transitives. La commande est son CMD.
+  # Image à part qui garde node_modules en entier, le CLI Prisma ayant besoin
+  # de ses dépendances transitives. La commande est son CMD (voir Dockerfile).
   migrate:
     build:
       context: .
       target: migrator
-      args: *args-build
+      args:
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+        NEXT_PUBLIC_UMAMI_URL: ${NEXT_PUBLIC_UMAMI_URL:-}
+        NEXT_PUBLIC_UMAMI_WEBSITE_ID: ${NEXT_PUBLIC_UMAMI_WEBSITE_ID:-}
     env_file: .env
-    environment: *url-base
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD:-password}@postgres:5432/${POSTGRES_DB:-impression3d}
     depends_on:
       postgres:
         condition: service_healthy
     profiles: ["outils"]
 
   postgres:
+    container_name: layercraft-postgres
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
@@ -82,6 +76,7 @@ services:
       retries: 10
 
   minio:
+    container_name: layercraft-minio
     image: minio/minio
     restart: unless-stopped
     command: server /data --console-address ":9001"
@@ -92,10 +87,10 @@ services:
     volumes:
       - miniodata:/data
     ports:
-      # L'API : publiée en local, exposée au navigateur par le reverse proxy.
       - "127.0.0.1:${MINIO_HOST_PORT:-9000}:9000"
-      # La console d'administration reste strictement locale.
+      # Console d'administration : strictement locale.
       - "127.0.0.1:${MINIO_CONSOLE_HOST_PORT:-9001}:9001"
+    networks: [default, proxy]
     healthcheck:
       test: ["CMD", "mc", "ready", "local"]
       interval: 10s
@@ -108,6 +103,11 @@ volumes:
   miniodata:
 
 networks:
-  # Nommé pour qu'un proxy vivant dans un autre compose puisse s'y rattacher.
   default:
     name: layercraft
+  # Réseau du reverse proxy, déjà créé par lui. `docker network ls` donne son
+  # nom exact ; le renseigner dans .env si ce n'est pas « proxy ».
+  # Sans proxy (poste local) : docker network create proxy
+  proxy:
+    external: true
+    name: ${RESEAU_PROXY:-proxy}
