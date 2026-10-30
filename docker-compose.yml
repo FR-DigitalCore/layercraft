@@ -29,7 +29,9 @@ services:
       postgres:
         condition: service_healthy
       minio:
-        condition: service_healthy
+        # service_started et non service_healthy : le miroir n'embarque pas
+        # forcément `mc`, et l'app crée ses buckets au premier upload.
+        condition: service_started
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 30s
@@ -78,9 +80,10 @@ services:
   minio:
     container_name: layercraft-minio
     # MinIO a retiré ses images de Docker Hub (septembre 2026) : `minio/minio`
-    # renvoie 404. quay.io est le dernier registre officiel, figé sur cette
-    # release — la dernière publiée.
-    image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
+    # renvoie 404, et quay.io répond 401 aux pulls anonymes depuis fin
+    # septembre. pgsty republie le binaire officiel avec le même entrypoint
+    # et le même /data.
+    image: pgsty/minio:latest
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
@@ -94,12 +97,6 @@ services:
       # Console d'administration : strictement locale.
       - "127.0.0.1:${MINIO_CONSOLE_HOST_PORT:-9001}:9001"
     networks: [default, proxy]
-    healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
-      interval: 10s
-      timeout: 5s
-      retries: 12
-      start_period: 15s
 
 volumes:
   pgdata:
