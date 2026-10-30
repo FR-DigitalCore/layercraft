@@ -169,29 +169,16 @@ sous-domaine, ni les aperçus STL ni les images de la galerie ne se chargent.
 
 #### Avec un reverse proxy déjà en place (recommandé)
 
-Si un proxy conteneurisé dessert déjà vos autres services sur son propre
-réseau, rattachez-y l'application de la même façon, avec le fichier de
-surcharge fourni :
+`app` et `minio` rejoignent le réseau du proxy ; Postgres reste sur le
+réseau interne. Repérez le nom du réseau :
 
 ```bash
-docker network ls          # retrouver le nom exact du réseau du proxy
-export RESEAU_PROXY=npm_default
-docker compose -f docker-compose.yml -f deploy/docker-compose.proxy.yml up -d
+docker network ls          # ex. npm_default
 ```
 
-Pour ne pas répéter les deux fichiers, mettez dans un `.env` à la racine :
-
-```env
-COMPOSE_FILE=docker-compose.yml:deploy/docker-compose.proxy.yml
-RESEAU_PROXY=npm_default
-```
-
-Seuls `app` et `minio` rejoignent le réseau partagé ; Postgres reste sur le
-réseau interne. Les deux services y portent un alias préfixé, car sur un
-réseau partagé entre plusieurs piles un nom comme `app` entrerait en
-collision avec celui d'une autre pile.
-
-Créez ensuite deux *Proxy Hosts* :
+et reportez-le en bas de `docker-compose.yml`, dans `networks.proxy.name`.
+Puis `docker compose up -d` comme d'habitude. Créez ensuite deux
+*Proxy Hosts* :
 
 - `votredomaine.fr` → Forward Hostname `layercraft-app`, Port `3000`,
   schéma `http`, *Websockets Support* activé.
@@ -214,18 +201,6 @@ quel sur l'hôte `fichiers.*`. La signature des liens MinIO le couvre, et une
 réécriture invaliderait toutes les URL de fichiers.
 
 Les certificats se demandent depuis l'onglet SSL de chaque hôte.
-
-#### Variante : rattacher le proxy au réseau de l'application
-
-L'inverse fonctionne aussi, sans fichier de surcharge — utile si vous
-préférez ne pas toucher au lancement de l'application :
-
-```bash
-docker network connect layercraft <nom-du-conteneur-du-proxy>
-```
-
-Les services sont alors joints par leur nom simple, `app:3000` et
-`minio:9000`.
 
 #### Avec Nginx installé sur la machine
 
