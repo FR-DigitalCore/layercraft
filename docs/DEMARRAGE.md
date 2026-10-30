@@ -160,26 +160,45 @@ Deux hôtes à publier, quel que soit le proxy :
 
 | Domaine | Destination | Pourquoi |
 |---|---|---|
-| `votredomaine.fr` | `app:3000` | l'application |
-| `fichiers.votredomaine.fr` | `minio:9000` | les fichiers, servis par liens signés |
+| `votredomaine.fr` | l'application, port 3000 | le site |
+| `fichiers.votredomaine.fr` | MinIO, port 9000 | les fichiers, servis par liens signés |
 
-#### Avec Nginx Proxy Manager
+Le second n'est pas optionnel : les liens vers les fichiers sont signés sur
+le domaine public et la signature couvre l'en-tête `Host`. Sans ce
+sous-domaine, ni les aperçus STL ni les images de la galerie ne se chargent.
 
-Le proxy tourne dans un conteneur : il ne peut pas joindre les ports publiés
-sur `127.0.0.1` de l'hôte, qui est sa propre boucle locale. Rattachez-le au
-réseau de l'application, puis adressez les services par leur nom :
+#### Avec un reverse proxy déjà en place (recommandé)
+
+Si un proxy conteneurisé dessert déjà vos autres services sur son propre
+réseau, rattachez-y l'application de la même façon, avec le fichier de
+surcharge fourni :
 
 ```bash
-docker network connect layercraft <nom-du-conteneur-npm>
+docker network ls          # retrouver le nom exact du réseau du proxy
+export RESEAU_PROXY=npm_default
+docker compose -f docker-compose.yml -f deploy/docker-compose.proxy.yml up -d
 ```
+
+Pour ne pas répéter les deux fichiers, mettez dans un `.env` à la racine :
+
+```env
+COMPOSE_FILE=docker-compose.yml:deploy/docker-compose.proxy.yml
+RESEAU_PROXY=npm_default
+```
+
+Seuls `app` et `minio` rejoignent le réseau partagé ; Postgres reste sur le
+réseau interne. Les deux services y portent un alias préfixé, car sur un
+réseau partagé entre plusieurs piles un nom comme `app` entrerait en
+collision avec celui d'une autre pile.
 
 Créez ensuite deux *Proxy Hosts* :
 
-- `votredomaine.fr` → Forward Hostname `app`, Port `3000`, schéma `http`,
-  *Websockets Support* activé.
-- `fichiers.votredomaine.fr` → Forward Hostname `minio`, Port `9000`.
+- `votredomaine.fr` → Forward Hostname `layercraft-app`, Port `3000`,
+  schéma `http`, *Websockets Support* activé.
+- `fichiers.votredomaine.fr` → Forward Hostname `layercraft-minio`,
+  Port `9000`.
 
-Sur l'hôte de l'application, onglet **Advanced**, ajoutez :
+Sur l'hôte de l'application, onglet **Advanced** :
 
 ```nginx
 client_max_body_size 60M;
@@ -190,12 +209,23 @@ proxy_send_timeout 300s;
 Sans la première ligne, les envois de STL se heurtent à la limite par défaut
 du proxy et échouent sans message clair.
 
-Un point à ne pas modifier : Nginx Proxy Manager transmet l'en-tête `Host`
-tel quel, et c'est indispensable sur l'hôte `fichiers.*` — la signature des
-liens MinIO le couvre. Une réécriture du `Host` invaliderait toutes les URL
-de fichiers.
+Un point à ne pas modifier : le proxy doit transmettre l'en-tête `Host` tel
+quel sur l'hôte `fichiers.*`. La signature des liens MinIO le couvre, et une
+réécriture invaliderait toutes les URL de fichiers.
 
 Les certificats se demandent depuis l'onglet SSL de chaque hôte.
+
+#### Variante : rattacher le proxy au réseau de l'application
+
+L'inverse fonctionne aussi, sans fichier de surcharge — utile si vous
+préférez ne pas toucher au lancement de l'application :
+
+```bash
+docker network connect layercraft <nom-du-conteneur-du-proxy>
+```
+
+Les services sont alors joints par leur nom simple, `app:3000` et
+`minio:9000`.
 
 #### Avec Nginx installé sur la machine
 
