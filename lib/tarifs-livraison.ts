@@ -22,31 +22,47 @@ export type ConfigLivraison = {
  */
 export const chargerConfigLivraison = cache(async (): Promise<ConfigLivraison> => {
   try {
-    const lignes = await prisma.tarifLivraison.findMany({
-      orderBy: { poidsMaxG: "asc" },
-    });
-    if (lignes.length === 0) return GRILLE_PORT_DEFAUT;
+    const [lignes, configs] = await Promise.all([
+      prisma.tarifLivraison.findMany({ orderBy: { poidsMaxG: "asc" } }),
+      prisma.transporteurConfig.findMany(),
+    ]);
 
-    const grille = Object.fromEntries(
-      MODES_LIVRAISON.map((mode) => [mode, [] as GrillePort[ModeLivraison]]),
-    ) as GrillePort;
+    let grille = GRILLE_PORT_DEFAUT;
 
-    for (const ligne of lignes) {
-      if (grille[ligne.transporteur]) {
-        grille[ligne.transporteur].push({
-          poidsMaxG: ligne.poidsMaxG,
-          prix: ligne.prix,
-        });
+    if (lignes.length > 0) {
+      const construite = Object.fromEntries(
+        MODES_LIVRAISON.map((mode) => [mode, [] as GrillePort[ModeLivraison]]),
+      ) as GrillePort;
+
+      for (const ligne of lignes) {
+        // Un transporteur retiré du code laisserait des lignes orphelines
+        // en base : on les ignore au lieu d'échouer.
+        if (construite[ligne.transporteur]) {
+          construite[ligne.transporteur].push({
+            poidsMaxG: ligne.poidsMaxG,
+            prix: ligne.prix,
+          });
+        }
       }
+
+      // Un transporteur sans palier enregistré garde ses valeurs par défaut,
+      // plutôt que de devenir silencieusement indisponible.
+      for (const mode of MODES_LIVRAISON) {
+        if (construite[mode].length === 0) construite[mode] = GRILLE_PORT_DEFAUT[mode];
+      }
+
+      grille = construite;
     }
 
-    // Un transporteur sans palier enregistré garde ses valeurs par défaut,
-    // plutôt que de devenir silencieusement indisponible.
-    for (const mode of MODES_LIVRAISON) {
-      if (grille[mode].length === 0) grille[mode] = GRILLE_PORT_DEFAUT[mode];
-    }
+    const parMode = new Map(configs.map((c) => [c.transporteur, c.actif]));
+    const actifs = Object.fromEntries(
+      MODES_LIVRAISON.map((mode) => [
+        mode,
+        parMode.get(mode) ?? TRANSPORTEURS_ACTIFS_DEFAUT[mode],
+      ]),
+    ) as TransporteursActifs;
 
-    return grille;
+    return { grille, actifs };
   } catch (erreur) {
     console.error("[livraison] lecture impossible, valeurs par défaut", erreur);
     return { grille: GRILLE_PORT_DEFAUT, actifs: TRANSPORTEURS_ACTIFS_DEFAUT };
