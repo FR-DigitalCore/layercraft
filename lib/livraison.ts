@@ -123,6 +123,7 @@ export function calculerFraisPort(
   grille: GrillePort = GRILLE_PORT_DEFAUT,
 ): number | null {
   const paliers = [...(grille[mode] ?? [])].sort((a, b) => a.poidsMaxG - b.poidsMaxG);
+  if (paliers.length === 0) return null;
   const palier = paliers.find((p) => masseG <= p.poidsMaxG);
   return palier ? palier.prix : null;
 }
