@@ -625,7 +625,7 @@ export function DevisForm({
             {formatPrix(detail.total + (fraisPort ?? 0))}
           </p>
           <p className="mt-3 text-xs leading-relaxed text-muted">
-            {detail.volumeEstime
+            {detail.volumeEstime && grille.mode !== "FORFAIT"
               ? "Prix HT non contractuel, calculé sur un volume moyen faute de fichier 3D. Joignez un STL pour une estimation nettement plus juste."
               : "Prix HT non contractuel : le devis ferme vous est envoyé sous 24 à 48 h après examen de la pièce."}
           </p>

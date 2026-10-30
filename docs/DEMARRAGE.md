@@ -123,6 +123,13 @@ cp .env.example .env
 | `MINIO_PUBLIC_ENDPOINT` | `fichiers.votredomaine.fr` |
 | `MINIO_PUBLIC_PORT` / `MINIO_PUBLIC_USE_SSL` | `443` / `true` |
 | `RESEND_API_KEY`, `RESEND_FROM`, `ADMIN_NOTIF_EMAIL` | compte Resend |
+| `STRIPE_SECRET_KEY` | clé secrète live du tableau de bord Stripe |
+| `STRIPE_WEBHOOK_SECRET` | donné à la création du webhook, voir ci-dessous |
+| `NEXT_PUBLIC_UMAMI_URL`, `NEXT_PUBLIC_UMAMI_WEBSITE_ID` | si vous activez la mesure d'audience |
+
+Les variables `NEXT_PUBLIC_*` sont figées dans le bundle au moment du build :
+renseignez-les **avant** `docker compose build`, sinon elles resteront vides
+dans les pages servies.
 
 `MINIO_ENDPOINT`, `MINIO_PORT` et `DATABASE_URL` sont surchargés par
 `docker-compose.yml` avec les noms de service internes : pas la peine d'y
@@ -147,9 +154,135 @@ Pour insérer le jeu de démonstration, depuis la même image :
 docker compose run --rm migrate node prisma/seed.mjs
 ```
 
-Puis le reverse proxy : `deploy/nginx.conf.example` contient les deux vhosts
-(app + fichiers), avec `client_max_body_size 60M` pour les uploads STL. Ensuite
+### Reverse proxy
+
+Deux hôtes à publier, quel que soit le proxy :
+
+| Domaine | Destination | Pourquoi |
+|---|---|---|
+| `votredomaine.fr` | l'application, port 3000 | le site |
+| `fichiers.votredomaine.fr` | MinIO, port 9000 | les fichiers, servis par liens signés |
+
+Le second n'est pas optionnel : les liens vers les fichiers sont signés sur
+le domaine public et la signature couvre l'en-tête `Host`. Sans ce
+sous-domaine, ni les aperçus STL ni les images de la galerie ne se chargent.
+
+#### Avec un reverse proxy déjà en place (recommandé)
+
+Si un proxy conteneurisé dessert déjà vos autres services sur son propre
+réseau, rattachez-y l'application de la même façon, avec le fichier de
+surcharge fourni :
+
+```bash
+docker network ls          # retrouver le nom exact du réseau du proxy
+export RESEAU_PROXY=npm_default
+docker compose -f docker-compose.yml -f deploy/docker-compose.proxy.yml up -d
+```
+
+Pour ne pas répéter les deux fichiers, mettez dans un `.env` à la racine :
+
+```env
+COMPOSE_FILE=docker-compose.yml:deploy/docker-compose.proxy.yml
+RESEAU_PROXY=npm_default
+```
+
+Seuls `app` et `minio` rejoignent le réseau partagé ; Postgres reste sur le
+réseau interne. Les deux services y portent un alias préfixé, car sur un
+réseau partagé entre plusieurs piles un nom comme `app` entrerait en
+collision avec celui d'une autre pile.
+
+Créez ensuite deux *Proxy Hosts* :
+
+- `votredomaine.fr` → Forward Hostname `layercraft-app`, Port `3000`,
+  schéma `http`, *Websockets Support* activé.
+- `fichiers.votredomaine.fr` → Forward Hostname `layercraft-minio`,
+  Port `9000`.
+
+Sur l'hôte de l'application, onglet **Advanced** :
+
+```nginx
+client_max_body_size 60M;
+proxy_read_timeout 300s;
+proxy_send_timeout 300s;
+```
+
+Sans la première ligne, les envois de STL se heurtent à la limite par défaut
+du proxy et échouent sans message clair.
+
+Un point à ne pas modifier : le proxy doit transmettre l'en-tête `Host` tel
+quel sur l'hôte `fichiers.*`. La signature des liens MinIO le couvre, et une
+réécriture invaliderait toutes les URL de fichiers.
+
+Les certificats se demandent depuis l'onglet SSL de chaque hôte.
+
+#### Variante : rattacher le proxy au réseau de l'application
+
+L'inverse fonctionne aussi, sans fichier de surcharge — utile si vous
+préférez ne pas toucher au lancement de l'application :
+
+```bash
+docker network connect layercraft <nom-du-conteneur-du-proxy>
+```
+
+Les services sont alors joints par leur nom simple, `app:3000` et
+`minio:9000`.
+
+#### Avec Nginx installé sur la machine
+
+`deploy/nginx.conf.example` contient les deux vhosts prêts à l'emploi, puis
 `certbot --nginx -d votredomaine.fr -d www.votredomaine.fr -d fichiers.votredomaine.fr`.
+Dans ce cas les services sont joints par les ports publiés sur `127.0.0.1`.
+
+### Déclarer le webhook Stripe
+
+Sans cette étape, le client paie mais la commande reste « à régler » : rien
+ne le signale, ni côté client ni côté atelier. C'est l'oubli le plus coûteux
+de la mise en production.
+
+Dans le tableau de bord Stripe, section Développeurs → Webhooks, ajoutez un
+point de terminaison :
+
+- URL : `https://votredomaine.fr/api/stripe/webhook`
+- Évènement à écouter : `checkout.session.completed`
+
+Stripe affiche alors un secret de signature `whsec_…` : c'est lui qui va dans
+`STRIPE_WEBHOOK_SECRET`. Redémarrez l'application après l'avoir renseigné.
+
+Vérifiez avec un paiement de test avant d'ouvrir : la commande doit passer en
+« Paiement reçu » et le client recevoir l'email correspondant.
+
+### Checklist avant d'ouvrir au public
+
+- [ ] `lib/entreprise.ts` rempli — le bandeau d'avertissement des pages
+      légales doit avoir disparu
+- [ ] `lib/site.ts` : nom commercial, email, téléphone, adresse réels
+- [ ] Tarifs d'impression recalés dans `/admin/tarifs`
+- [ ] Grille de port recalée dans `/admin/livraison`
+- [ ] Transporteurs activés en fonction des contrats obtenus
+- [ ] Webhook Stripe déclaré et testé par un paiement réel
+- [ ] Domaine vérifié chez Resend, sans quoi les emails partent en indésirables
+- [ ] Mot de passe administrateur changé, `NEXTAUTH_SECRET` propre à la prod
+- [ ] Identifiants MinIO et Postgres changés
+- [ ] Sauvegardes en place (voir ci-dessous)
+- [ ] Textes légaux relus par quelqu'un de compétent
+
+### Sauvegardes
+
+Rien n'est sauvegardé par défaut. Deux choses à préserver : la base, qui
+contient les commandes et les comptes, et le volume MinIO, qui contient les
+fichiers 3D des clients.
+
+```bash
+# Base, à planifier quotidiennement
+docker compose exec -T postgres pg_dump -U user impression3d | gzip > sauvegarde-$(date +%F).sql.gz
+
+# Fichiers
+docker run --rm -v layercraft_miniodata:/data -v "$PWD":/sauvegarde alpine \
+  tar czf /sauvegarde/minio-$(date +%F).tar.gz -C /data .
+```
+
+Pensez à copier ces archives **hors du VPS** : une sauvegarde sur la machine
+qu'elle protège ne protège de rien.
 
 ### Ce qui n'est pas exposé
 
@@ -249,31 +382,20 @@ garantie, qui dépendent de votre activité réelle.
 ## Mesure d'audience
 
 Umami, sans cookie ni identifiant persistant, donc sans bandeau de
-consentement à afficher. Deux variables suffisent à l'activer :
+consentement à afficher. **L'application n'héberge pas Umami** : elle se
+branche sur une instance existante. Deux variables suffisent :
 
 ```env
 NEXT_PUBLIC_UMAMI_URL="https://umami.votredomaine.fr"
-NEXT_PUBLIC_UMAMI_WEBSITE_ID="<identifiant donné par Umami>"
+NEXT_PUBLIC_UMAMI_WEBSITE_ID="<identifiant du site créé dans Umami>"
 ```
 
-Sans elles, aucun script n'est chargé. Ce sont des variables `NEXT_PUBLIC_*` :
-elles sont figées dans le bundle au build, donc `docker compose build` est
-nécessaire après les avoir renseignées.
+Créez le site dans votre tableau de bord Umami pour obtenir l'identifiant.
+Sans ces deux valeurs, aucun script n'est chargé.
 
-Pour héberger Umami vous-même, à côté de l'application :
-
-```bash
-docker compose --profile mesure up -d umami   # écoute sur 127.0.0.1:3001
-```
-
-Sa base `umami` est créée au premier démarrage du volume Postgres. Sur une
-installation déjà en place, créez-la à la main :
-
-```bash
-docker compose exec postgres psql -U user -c 'CREATE DATABASE umami;'
-```
-
-Identifiants Umami par défaut : `admin` / `umami` — à changer immédiatement.
+Ce sont des variables `NEXT_PUBLIC_*` : elles sont figées dans le bundle au
+build, donc `docker compose build` est nécessaire après les avoir
+renseignées.
 
 ### Ce qui n'est pas mesuré
 
@@ -282,7 +404,6 @@ main, car les URL de suivi contiennent le jeton de commande : les laisser
 partir reviendrait à recopier un secret dans les statistiques. Sont exclus
 `/suivi`, `/mon-compte`, `/connexion`, `/admin` et `/api`. Le script n'est
 d'ailleurs chargé que sur les pages publiques.
-
 
 ## Transporteurs
 
