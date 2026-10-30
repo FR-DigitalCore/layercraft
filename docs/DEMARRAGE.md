@@ -123,6 +123,13 @@ cp .env.example .env
 | `MINIO_PUBLIC_ENDPOINT` | `fichiers.votredomaine.fr` |
 | `MINIO_PUBLIC_PORT` / `MINIO_PUBLIC_USE_SSL` | `443` / `true` |
 | `RESEND_API_KEY`, `RESEND_FROM`, `ADMIN_NOTIF_EMAIL` | compte Resend |
+| `STRIPE_SECRET_KEY` | clé secrète live du tableau de bord Stripe |
+| `STRIPE_WEBHOOK_SECRET` | donné à la création du webhook, voir ci-dessous |
+| `NEXT_PUBLIC_UMAMI_URL`, `NEXT_PUBLIC_UMAMI_WEBSITE_ID` | si vous activez la mesure d'audience |
+
+Les variables `NEXT_PUBLIC_*` sont figées dans le bundle au moment du build :
+renseignez-les **avant** `docker compose build`, sinon elles resteront vides
+dans les pages servies.
 
 `MINIO_ENDPOINT`, `MINIO_PORT` et `DATABASE_URL` sont surchargés par
 `docker-compose.yml` avec les noms de service internes : pas la peine d'y
@@ -150,6 +157,57 @@ docker compose run --rm migrate node prisma/seed.mjs
 Puis le reverse proxy : `deploy/nginx.conf.example` contient les deux vhosts
 (app + fichiers), avec `client_max_body_size 60M` pour les uploads STL. Ensuite
 `certbot --nginx -d votredomaine.fr -d www.votredomaine.fr -d fichiers.votredomaine.fr`.
+
+### Déclarer le webhook Stripe
+
+Sans cette étape, le client paie mais la commande reste « à régler » : rien
+ne le signale, ni côté client ni côté atelier. C'est l'oubli le plus coûteux
+de la mise en production.
+
+Dans le tableau de bord Stripe, section Développeurs → Webhooks, ajoutez un
+point de terminaison :
+
+- URL : `https://votredomaine.fr/api/stripe/webhook`
+- Évènement à écouter : `checkout.session.completed`
+
+Stripe affiche alors un secret de signature `whsec_…` : c'est lui qui va dans
+`STRIPE_WEBHOOK_SECRET`. Redémarrez l'application après l'avoir renseigné.
+
+Vérifiez avec un paiement de test avant d'ouvrir : la commande doit passer en
+« Paiement reçu » et le client recevoir l'email correspondant.
+
+### Checklist avant d'ouvrir au public
+
+- [ ] `lib/entreprise.ts` rempli — le bandeau d'avertissement des pages
+      légales doit avoir disparu
+- [ ] `lib/site.ts` : nom commercial, email, téléphone, adresse réels
+- [ ] Tarifs d'impression recalés dans `/admin/tarifs`
+- [ ] Grille de port recalée dans `/admin/livraison`
+- [ ] Transporteurs activés en fonction des contrats obtenus
+- [ ] Webhook Stripe déclaré et testé par un paiement réel
+- [ ] Domaine vérifié chez Resend, sans quoi les emails partent en indésirables
+- [ ] Mot de passe administrateur changé, `NEXTAUTH_SECRET` propre à la prod
+- [ ] Identifiants MinIO et Postgres changés
+- [ ] Sauvegardes en place (voir ci-dessous)
+- [ ] Textes légaux relus par quelqu'un de compétent
+
+### Sauvegardes
+
+Rien n'est sauvegardé par défaut. Deux choses à préserver : la base, qui
+contient les commandes et les comptes, et le volume MinIO, qui contient les
+fichiers 3D des clients.
+
+```bash
+# Base, à planifier quotidiennement
+docker compose exec -T postgres pg_dump -U user impression3d | gzip > sauvegarde-$(date +%F).sql.gz
+
+# Fichiers
+docker run --rm -v layercraft_miniodata:/data -v "$PWD":/sauvegarde alpine \
+  tar czf /sauvegarde/minio-$(date +%F).tar.gz -C /data .
+```
+
+Pensez à copier ces archives **hors du VPS** : une sauvegarde sur la machine
+qu'elle protège ne protège de rien.
 
 ### Ce qui n'est pas exposé
 
