@@ -307,31 +307,20 @@ garantie, qui dépendent de votre activité réelle.
 ## Mesure d'audience
 
 Umami, sans cookie ni identifiant persistant, donc sans bandeau de
-consentement à afficher. Deux variables suffisent à l'activer :
+consentement à afficher. **L'application n'héberge pas Umami** : elle se
+branche sur une instance existante. Deux variables suffisent :
 
 ```env
 NEXT_PUBLIC_UMAMI_URL="https://umami.votredomaine.fr"
-NEXT_PUBLIC_UMAMI_WEBSITE_ID="<identifiant donné par Umami>"
+NEXT_PUBLIC_UMAMI_WEBSITE_ID="<identifiant du site créé dans Umami>"
 ```
 
-Sans elles, aucun script n'est chargé. Ce sont des variables `NEXT_PUBLIC_*` :
-elles sont figées dans le bundle au build, donc `docker compose build` est
-nécessaire après les avoir renseignées.
+Créez le site dans votre tableau de bord Umami pour obtenir l'identifiant.
+Sans ces deux valeurs, aucun script n'est chargé.
 
-Pour héberger Umami vous-même, à côté de l'application :
-
-```bash
-docker compose --profile mesure up -d umami   # écoute sur 127.0.0.1:3001
-```
-
-Sa base `umami` est créée au premier démarrage du volume Postgres. Sur une
-installation déjà en place, créez-la à la main :
-
-```bash
-docker compose exec postgres psql -U user -c 'CREATE DATABASE umami;'
-```
-
-Identifiants Umami par défaut : `admin` / `umami` — à changer immédiatement.
+Ce sont des variables `NEXT_PUBLIC_*` : elles sont figées dans le bundle au
+build, donc `docker compose build` est nécessaire après les avoir
+renseignées.
 
 ### Ce qui n'est pas mesuré
 
@@ -340,7 +329,6 @@ main, car les URL de suivi contiennent le jeton de commande : les laisser
 partir reviendrait à recopier un secret dans les statistiques. Sont exclus
 `/suivi`, `/mon-compte`, `/connexion`, `/admin` et `/api`. Le script n'est
 d'ailleurs chargé que sur les pages publiques.
-
 
 ## Transporteurs
 
