@@ -170,16 +170,13 @@ sous-domaine, ni les aperçus STL ni les images de la galerie ne se chargent.
 #### Avec un reverse proxy déjà en place (recommandé)
 
 `app` et `minio` rejoignent le réseau du proxy ; Postgres reste sur le
-réseau interne. Repérez le nom du réseau et mettez-le dans `.env` :
+réseau interne. Repérez le nom du réseau :
 
 ```bash
 docker network ls          # ex. npm_default
 ```
 
-```env
-RESEAU_PROXY=npm_default
-```
-
+et reportez-le en bas de `docker-compose.yml`, dans `networks.proxy.name`.
 Puis `docker compose up -d` comme d'habitude. Créez ensuite deux
 *Proxy Hosts* :
 

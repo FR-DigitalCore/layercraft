@@ -105,9 +105,9 @@ volumes:
 networks:
   default:
     name: layercraft
-  # Réseau du reverse proxy, déjà créé par lui. `docker network ls` donne son
-  # nom exact ; le renseigner dans .env si ce n'est pas « proxy ».
-  # Sans proxy (poste local) : docker network create proxy
+  # Réseau du reverse proxy, créé par lui. Mettre ici le nom que donne
+  # `docker network ls` (souvent npm_default).
+  # Sans reverse proxy : docker network create proxy
   proxy:
     external: true
-    name: ${RESEAU_PROXY:-proxy}
+    name: proxy
