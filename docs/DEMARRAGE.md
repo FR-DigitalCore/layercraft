@@ -154,9 +154,54 @@ Pour insérer le jeu de démonstration, depuis la même image :
 docker compose run --rm migrate node prisma/seed.mjs
 ```
 
-Puis le reverse proxy : `deploy/nginx.conf.example` contient les deux vhosts
-(app + fichiers), avec `client_max_body_size 60M` pour les uploads STL. Ensuite
+### Reverse proxy
+
+Deux hôtes à publier, quel que soit le proxy :
+
+| Domaine | Destination | Pourquoi |
+|---|---|---|
+| `votredomaine.fr` | `app:3000` | l'application |
+| `fichiers.votredomaine.fr` | `minio:9000` | les fichiers, servis par liens signés |
+
+#### Avec Nginx Proxy Manager
+
+Le proxy tourne dans un conteneur : il ne peut pas joindre les ports publiés
+sur `127.0.0.1` de l'hôte, qui est sa propre boucle locale. Rattachez-le au
+réseau de l'application, puis adressez les services par leur nom :
+
+```bash
+docker network connect layercraft <nom-du-conteneur-npm>
+```
+
+Créez ensuite deux *Proxy Hosts* :
+
+- `votredomaine.fr` → Forward Hostname `app`, Port `3000`, schéma `http`,
+  *Websockets Support* activé.
+- `fichiers.votredomaine.fr` → Forward Hostname `minio`, Port `9000`.
+
+Sur l'hôte de l'application, onglet **Advanced**, ajoutez :
+
+```nginx
+client_max_body_size 60M;
+proxy_read_timeout 300s;
+proxy_send_timeout 300s;
+```
+
+Sans la première ligne, les envois de STL se heurtent à la limite par défaut
+du proxy et échouent sans message clair.
+
+Un point à ne pas modifier : Nginx Proxy Manager transmet l'en-tête `Host`
+tel quel, et c'est indispensable sur l'hôte `fichiers.*` — la signature des
+liens MinIO le couvre. Une réécriture du `Host` invaliderait toutes les URL
+de fichiers.
+
+Les certificats se demandent depuis l'onglet SSL de chaque hôte.
+
+#### Avec Nginx installé sur la machine
+
+`deploy/nginx.conf.example` contient les deux vhosts prêts à l'emploi, puis
 `certbot --nginx -d votredomaine.fr -d www.votredomaine.fr -d fichiers.votredomaine.fr`.
+Dans ce cas les services sont joints par les ports publiés sur `127.0.0.1`.
 
 ### Déclarer le webhook Stripe
 

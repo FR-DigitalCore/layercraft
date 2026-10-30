@@ -25,7 +25,10 @@ services:
       MINIO_PUBLIC_PORT: ${MINIO_PUBLIC_PORT:-${MINIO_HOST_PORT:-9000}}
       MINIO_PUBLIC_USE_SSL: ${MINIO_PUBLIC_USE_SSL:-false}
     ports:
-      # Seul Nginx doit joindre l'app : on n'écoute que sur la boucle locale.
+      # Publication sur la boucle locale seulement. Un reverse proxy
+      # conteneurisé (Nginx Proxy Manager par exemple) ne passe PAS par là :
+      # il rejoint le réseau `layercraft` et vise directement `app:3000`.
+      # Cette publication sert au débogage et aux tunnels SSH.
       - "127.0.0.1:${APP_HOST_PORT:-3000}:3000"
     depends_on:
       postgres:
@@ -111,3 +114,11 @@ services:
 volumes:
   pgdata:
   miniodata:
+
+networks:
+  # Nommé explicitement pour qu'un reverse proxy vivant dans un autre
+  # docker-compose puisse s'y connecter :
+  #   docker network connect layercraft <conteneur-du-proxy>
+  # Il adresse alors les services par leur nom : app:3000, minio:9000.
+  default:
+    name: layercraft

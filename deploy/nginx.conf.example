@@ -1,4 +1,9 @@
-# Reverse proxy Nginx pour le VPS. Deux vhosts :
+# Reverse proxy Nginx installé directement sur la machine. Deux vhosts.
+#
+# Si vous utilisez Nginx Proxy Manager, ce fichier ne s'applique pas tel
+# quel : voir docs/DEMARRAGE.md, section « Reverse proxy ». Il reste utile
+# comme référence des réglages à reproduire dans l'interface.
+#
 #   votredomaine.fr     → l'application Next (conteneur app, port 3000)
 #   fichiers.votredomaine.fr → l'API MinIO (conteneur minio, port 9000)
 #
