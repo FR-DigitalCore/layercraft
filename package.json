@@ -13,7 +13,8 @@
     "db:deploy": "prisma migrate deploy",
     "db:seed": "node --env-file-if-exists=.env prisma/seed.mjs",
     "db:studio": "prisma studio",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "test:mondial-relay": "node --env-file-if-exists=.env scripts/tester-mondial-relay.mjs"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.3",

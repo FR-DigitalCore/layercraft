@@ -283,6 +283,57 @@ partir reviendrait à recopier un secret dans les statistiques. Sont exclus
 `/suivi`, `/mon-compte`, `/connexion`, `/admin` et `/api`. Le script n'est
 d'ailleurs chargé que sur les pages publiques.
 
+
+## Transporteurs
+
+Chaque transporteur s'active ou se masque depuis `/admin/livraison`. Un
+transporteur masqué disparaît du configurateur, du pied de page, et est refusé
+côté serveur si quelqu'un tente de le soumettre directement. Le retrait sur
+place ne peut pas être désactivé : il sert de filet pour qu'une commande reste
+toujours possible.
+
+**Mondial Relay est désactivé par défaut**, parce qu'il exige des identifiants
+obtenus au contrat. Activez-le une fois ceux-ci renseignés et vérifiés.
+
+## Mondial Relay
+
+L'API officielle est gratuite : elle vient avec le compte professionnel, vous
+ne payez que les colis. Il faut en revanche ouvrir ce compte pour obtenir la
+« fiche de paramètres de sécurité » qui contient les deux valeurs attendues :
+
+```env
+MONDIAL_RELAY_ENSEIGNE="XXXXXXXX"   # 8 caractères
+MONDIAL_RELAY_CLE_PRIVEE="........"
+```
+
+Avant de les mettre en production, vérifiez-les en isolation :
+
+```bash
+npm run test:mondial-relay -- 75001
+```
+
+Le script affiche la chaîne signée (clé masquée), le MD5 obtenu, le code STAT
+renvoyé et la liste des points relais trouvés. Il n'utilise pas
+l'application : s'il passe, l'intégration passera.
+
+### Le piège de la signature
+
+L'authentification repose sur un MD5 de tous les paramètres concaténés **dans
+l'ordre exact de la documentation**, champs vides compris, suivis de la clé
+privée :
+
+```
+[Enseigne][Pays][NumPointRelais][Ville][CP][Latitude][Longitude]
+[Taille][Poids][Action][DelaiEnvoi][RayonRecherche][TypeActivite]
+[NombreResultats][CLÉ PRIVÉE]
+```
+
+Un champ oublié décale tout le reste et la requête est rejetée avec un
+`STAT 8`, sans autre explication. La liste est définie une seule fois dans
+`lib/transporteurs/mondial-relay.ts` et sert à la fois à la signature et à
+l'ordre des éléments du corps SOAP, pour que les deux ne puissent pas
+diverger. Référence : documentation « Solution Web Service » V-5.14.
+
 ## Ce qui reste à faire
 
 - Vérification de bout en bout avec Postgres et MinIO réels, **y compris

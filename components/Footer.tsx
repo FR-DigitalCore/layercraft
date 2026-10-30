@@ -1,7 +1,14 @@
 import Link from "next/link";
 import { site } from "@/lib/site";
+import { chargerConfigLivraison } from "@/lib/tarifs-livraison";
+import { LIVRAISON_INFOS, modesDisponibles } from "@/lib/livraison";
 
-export function Footer() {
+export async function Footer() {
+  // Les modes annoncés suivent ceux réellement activés en admin : le footer
+  // ne doit pas promettre un transporteur que le configurateur ne propose pas.
+  const { actifs } = await chargerConfigLivraison();
+  const modes = modesDisponibles(actifs).map((mode) => LIVRAISON_INFOS[mode].titre);
+
   return (
     <footer className="mt-24 border-t border-border bg-surface">
       <div className="conteneur grid gap-10 py-14 sm:grid-cols-2 lg:grid-cols-4">
@@ -38,7 +45,7 @@ export function Footer() {
           <p className="mb-3 text-sm font-semibold">Zone de livraison</p>
           <p className="text-sm leading-relaxed text-muted">{site.zone}</p>
           <p className="mt-3 text-sm leading-relaxed text-muted">
-            Expédition Colissimo et Mondial Relay, ou retrait sur place.
+            {modes.join(", ")}.
           </p>
         </div>
 

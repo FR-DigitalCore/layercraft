@@ -5,7 +5,6 @@ import type { ModeLivraison } from "@prisma/client";
 import {
   formatMasse,
   LIVRAISON_INFOS,
-  MODES_LIVRAISON,
   type PalierPort,
 } from "@/lib/livraison";
 import { formatPrix } from "@/lib/prix";
@@ -50,11 +49,14 @@ export function ChoixLivraison({
   onChange,
   masseG,
   fraisParMode,
+  modes,
 }: {
   etat: EtatLivraison;
   onChange: (maj: Partial<EtatLivraison>) => void;
   masseG: number;
   fraisParMode: Record<ModeLivraison, number | null>;
+  /** Transporteurs activés en admin, dans l'ordre d'affichage. */
+  modes: ModeLivraison[];
 }) {
   const [points, setPoints] = useState<PointRelais[] | null>(null);
   const [recherche, setRecherche] = useState(false);
@@ -99,7 +101,7 @@ export function ChoixLivraison({
           Masse estimée du colis : {formatMasse(masseG)}, emballage compris.
         </Aide>
         <div className="mt-3 grid gap-3">
-          {MODES_LIVRAISON.map((mode) => {
+          {modes.map((mode) => {
             const i = LIVRAISON_INFOS[mode];
             const frais = fraisParMode[mode];
             const actif = etat.mode === mode;

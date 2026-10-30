@@ -34,6 +34,29 @@ export const LIVRAISON_INFOS: Record<
   },
 };
 
+export type TransporteursActifs = Record<ModeLivraison, boolean>;
+
+/**
+ * Transporteurs proposés tant que rien n'a été réglé en admin.
+ *
+ * Mondial Relay est désactivé par défaut : il exige un code enseigne et une
+ * clé privée obtenus au contrat. Le proposer sans eux reviendrait à offrir
+ * un mode de livraison qui échoue au moment de s'en servir.
+ */
+export const TRANSPORTEURS_ACTIFS_DEFAUT: TransporteursActifs = {
+  RETRAIT: true,
+  COLISSIMO: true,
+  MONDIAL_RELAY: false,
+};
+
+/** Modes réellement proposables au client. */
+export function modesDisponibles(actifs: TransporteursActifs): ModeLivraison[] {
+  const disponibles = MODES_LIVRAISON.filter((mode) => actifs[mode]);
+  // Le retrait sert de filet : sans lui, un client ne pourrait pas commander
+  // si l'atelier a tout désactivé par erreur.
+  return disponibles.length > 0 ? disponibles : ["RETRAIT"];
+}
+
 /** Palier de port : s'applique jusqu'à `poidsMaxG` grammes inclus. */
 export type PalierPort = { poidsMaxG: number; prix: number };
 export type GrillePort = Record<ModeLivraison, PalierPort[]>;

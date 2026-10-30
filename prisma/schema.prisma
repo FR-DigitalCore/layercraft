@@ -79,6 +79,15 @@ enum ModeLivraison {
   MONDIAL_RELAY
 }
 
+/// Transporteurs proposés au client, activables depuis /admin/livraison.
+/// Un transporteur dont on n'a pas encore les accès reste désactivé plutôt
+/// que proposé puis en échec au moment de s'en servir.
+model TransporteurConfig {
+  transporteur ModeLivraison @id
+  actif        Boolean       @default(true)
+  updatedAt    DateTime      @updatedAt
+}
+
 /// Grille de port au poids, éditable depuis /admin/livraison.
 /// Le palier retenu est le plus petit poidsMaxG qui couvre la masse.
 model TarifLivraison {

@@ -25,14 +25,87 @@ export function mondialRelayConfigure(): boolean {
   );
 }
 
-/** L'API attend un MD5 de la concaténation des paramètres suivis de la clé. */
-function signature(valeurs: string[]): string {
-  const cle = process.env.MONDIAL_RELAY_CLE_PRIVEE ?? "";
+/**
+ * Paramètres de WSI4_PointRelais_Recherche, dans l'ordre exact de la
+ * documentation. Cet ordre est doublement structurant : il détermine la
+ * concaténation signée, et l'ordre des éléments du corps SOAP.
+ *
+ * Les champs inutilisés comptent quand même, sous forme de chaîne vide :
+ * les omettre décale tout le reste et la signature est rejetée.
+ */
+export const CHAMPS_RECHERCHE = [
+  "Enseigne",
+  "Pays",
+  "NumPointRelais",
+  "Ville",
+  "CP",
+  "Latitude",
+  "Longitude",
+  "Taille",
+  "Poids",
+  "Action",
+  "DelaiEnvoi",
+  "RayonRecherche",
+  "TypeActivite",
+  "NombreResultats",
+] as const;
+
+export type ParametresRecherche = Partial<
+  Record<(typeof CHAMPS_RECHERCHE)[number], string>
+>;
+
+/** Chaîne signée : tous les champs concaténés, puis la clé privée. */
+export function chaineASigner(
+  parametres: ParametresRecherche,
+  clePrivee: string,
+): string {
+  return CHAMPS_RECHERCHE.map((champ) => parametres[champ] ?? "").join("") + clePrivee;
+}
+
+/** L'API attend le MD5 en majuscules de cette concaténation. */
+export function signature(
+  parametres: ParametresRecherche,
+  clePrivee = process.env.MONDIAL_RELAY_CLE_PRIVEE ?? "",
+): string {
   return createHash("md5")
-    .update(valeurs.join("") + cle, "utf8")
+    .update(chaineASigner(parametres, clePrivee), "utf8")
     .digest("hex")
     .toUpperCase();
 }
+
+/** Corps SOAP, éléments émis dans l'ordre imposé par le service. */
+export function corpsRecherche(parametres: ParametresRecherche): string {
+  const elements = CHAMPS_RECHERCHE.map(
+    (champ) => `      <${champ}>${parametres[champ] ?? ""}</${champ}>`,
+  ).join("\n");
+
+  return `<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body>
+    <WSI4_PointRelais_Recherche xmlns="http://www.mondialrelay.fr/webservice/">
+${elements}
+      <Security>${signature(parametres)}</Security>
+    </WSI4_PointRelais_Recherche>
+  </soap:Body>
+</soap:Envelope>`;
+}
+
+/** Codes STAT les plus courants, pour un diagnostic lisible. */
+export const CODES_STAT: Record<string, string> = {
+  "0": "Succès",
+  "1": "Enseigne invalide",
+  "2": "Numéro d'enseigne vide ou inexistant",
+  "3": "Numéro de compte enseigne invalide",
+  "5": "Numéro de dossier enseigne invalide",
+  "8": "Mot de passe ou hachage invalide",
+  "9": "Ville non reconnue ou non unique",
+  "10": "Type de collecte invalide",
+  "20": "Code postal invalide",
+  "24": "Pays invalide",
+  "30": "Numéro de téléphone invalide",
+  "80": "Code tracing : colis inconnu",
+  "99": "Erreur générique du service",
+};
 
 function champ(xml: string, nom: string): string {
   const trouve = new RegExp(`<${nom}>([^<]*)</${nom}>`).exec(xml);
@@ -50,22 +123,12 @@ export async function chercherPointsRelais(
 ): Promise<PointRelais[] | null> {
   if (!mondialRelayConfigure()) return null;
 
-  const enseigne = process.env.MONDIAL_RELAY_ENSEIGNE!;
-  const pays = "FR";
-  const nb = String(Math.min(30, Math.max(1, nombre)));
-
-  const corps = `<?xml version="1.0" encoding="utf-8"?>
-<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
-  <soap:Body>
-    <WSI4_PointRelais_Recherche xmlns="http://www.mondialrelay.fr/webservice/">
-      <Enseigne>${enseigne}</Enseigne>
-      <Pays>${pays}</Pays>
-      <CP>${codePostal}</CP>
-      <NombreResultats>${nb}</NombreResultats>
-      <Security>${signature([enseigne, pays, "", codePostal, "", "", "", "", "", nb])}</Security>
-    </WSI4_PointRelais_Recherche>
-  </soap:Body>
-</soap:Envelope>`;
+  const corps = corpsRecherche({
+    Enseigne: process.env.MONDIAL_RELAY_ENSEIGNE!,
+    Pays: "FR",
+    CP: codePostal,
+    NombreResultats: String(Math.min(30, Math.max(1, nombre))),
+  });
 
   try {
     const reponse = await fetch(URL_API, {
@@ -86,7 +149,9 @@ export async function chercherPointsRelais(
     const xml = await reponse.text();
     const statut = champ(xml, "STAT");
     if (statut && statut !== "0") {
-      console.error("[mondial-relay] code d'erreur", statut);
+      console.error(
+        `[mondial-relay] code ${statut} — ${CODES_STAT[statut] ?? "code inconnu"}`,
+      );
       return null;
     }
 
