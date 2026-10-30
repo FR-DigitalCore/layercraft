@@ -280,12 +280,49 @@ DATABASE_URL="postgresql://user:MOTDEPASSE@127.0.0.1:5432/impression3d" \
 
 ### Mise à jour
 
+Automatique : tout `push` sur `main` déclenche le workflow
+`.github/workflows/deploiement.yml`, qui vérifie (lint, types, build) puis,
+si tout passe, se connecte au serveur en SSH et y lance
+`scripts/deployer.sh`. Une pull request ne déclenche que la vérification.
+
+À la main, c'est le même script :
+
 ```bash
-git pull
-docker compose build
-docker compose run --rm migrate
-docker compose up -d
+bash scripts/deployer.sh
 ```
+
+Il récupère `origin/main`, reconstruit l'image, joue les migrations,
+redémarre, puis attend que le conteneur repasse *healthy* — et affiche les
+journaux en échouant si ce n'est pas le cas au bout de trois minutes.
+
+#### Mettre en place le déploiement automatique
+
+Sur le serveur, créer une clé dédiée au déploiement et l'autoriser :
+
+```bash
+ssh-keygen -t ed25519 -f ~/.ssh/layercraft-deploy -N "" -C "github-actions"
+cat ~/.ssh/layercraft-deploy.pub >> ~/.ssh/authorized_keys
+cat ~/.ssh/layercraft-deploy        # la clé privée, à copier dans le secret
+ssh-keyscan -H <ip-ou-domaine>      # l'empreinte du serveur
+```
+
+Puis, dans *Settings → Secrets and variables → Actions* du dépôt :
+
+| Secret | Valeur |
+|---|---|
+| `VPS_HOST` | l'IP ou le domaine du serveur |
+| `VPS_USER` | l'utilisateur SSH |
+| `VPS_SSH_KEY` | le contenu de la clé **privée** |
+| `VPS_HOST_KEY` | la sortie de `ssh-keyscan` |
+| `VPS_PORT` | facultatif, `22` par défaut |
+| `VPS_PATH` | facultatif, `/opt/layercraft` par défaut |
+
+`VPS_HOST_KEY` n'est pas décoratif : sans empreinte connue, la CI
+accepterait n'importe quelle machine répondant à cette adresse et lui
+livrerait sa clé privée.
+
+Le serveur doit pouvoir faire `git fetch` tout seul — c'est déjà le cas si
+le dépôt y a été cloné avec un accès en lecture.
 
 ### Reste à faire avant la mise en ligne
 
