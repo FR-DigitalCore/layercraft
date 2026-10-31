@@ -34,6 +34,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           console.error("[auth] ADMIN_EMAIL ou ADMIN_PASSWORD_HASH manquant");
           return null;
         }
+        // Un hash tronqué échoue en silence derrière un « identifiants
+        // invalides ». Le cas classique : des guillemets doubles dans .env,
+        // dont docker-compose interpole les `$`.
+        if (!/^\$2[aby]\$\d{2}\$.{53}$/.test(hash)) {
+          console.error(
+            `[auth] ADMIN_PASSWORD_HASH n'est pas un hash bcrypt valide ` +
+              `(${hash.length} caractères, 60 attendus). Dans .env, entourez-le ` +
+              `de guillemets simples : docker-compose interprète les $ entre ` +
+              `guillemets doubles.`,
+          );
+          return null;
+        }
         if (!email || !password) return null;
 
         // Compare toujours le hash, même si l'email ne correspond pas :
