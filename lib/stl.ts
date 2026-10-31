@@ -34,24 +34,37 @@ export function extensionAutorisee(nomFichier: string): boolean {
   return EXTENSIONS_STL.some((ext) => nom.endsWith(ext));
 }
 
+export type MesuresStl = {
+  /** Volume du solide, en cm³. */
+  volumeCm3: number;
+  /** Aire de la surface extérieure, en cm². */
+  aireCm2: number;
+};
+
 /**
- * Volume du maillage en cm³, par somme des volumes signés des tétraèdres
- * formés avec l'origine. Le signe s'annule pour les faces opposées : le
- * résultat est correct pour un maillage fermé, quelle que soit sa position.
- * Les STL sont exprimés en millimètres.
+ * Mesure un maillage STL binaire. Les STL sont exprimés en millimètres.
+ *
+ * Le volume est la somme des volumes signés des tétraèdres formés avec
+ * l'origine : le signe s'annule pour les faces opposées, le résultat est
+ * donc correct pour un maillage fermé, où qu'il se trouve dans l'espace.
+ *
+ * L'aire sert à estimer la matière réellement déposée : sur une petite
+ * pièce, les parois et les couches pleines occupent presque tout le volume,
+ * et le taux de remplissage ne s'applique qu'à ce qu'il en reste.
  *
  * Renvoie null si le fichier n'est pas exploitable (ASCII, maillage vide).
  */
-export function calculerVolumeCm3(buffer: Buffer): number | null {
+export function mesurerStl(buffer: Buffer): MesuresStl | null {
   if (buffer.length < 84) return null;
 
   const nbTriangles = buffer.readUInt32LE(80);
   if (nbTriangles === 0 || buffer.length !== 84 + nbTriangles * 50) {
-    // STL ASCII : parsing non implémenté, le volume reste inconnu.
+    // STL ASCII : parsing non implémenté, les mesures restent inconnues.
     return null;
   }
 
   let volumeMm3 = 0;
+  let aireMm2 = 0;
 
   for (let i = 0; i < nbTriangles; i++) {
     // 84 = en-tête ; +12 pour sauter le vecteur normal de la facette
@@ -82,12 +95,25 @@ export function calculerVolumeCm3(buffer: Buffer): number | null {
         ay * (bx * cz - bz * cx) +
         az * (bx * cy - by * cx)) /
       6;
+
+    // Aire du triangle : demi-norme du produit vectoriel AB ∧ AC.
+    const ux = bx - ax, uy = by - ay, uz = bz - az;
+    const vx = cx - ax, vy = cy - ay, vz = cz - az;
+    const nx = uy * vz - uz * vy;
+    const ny = uz * vx - ux * vz;
+    const nz = ux * vy - uy * vx;
+    aireMm2 += Math.sqrt(nx * nx + ny * ny + nz * nz) / 2;
   }
 
   const volumeCm3 = Math.abs(volumeMm3) / 1000;
+  const aireCm2 = aireMm2 / 100;
   if (!Number.isFinite(volumeCm3) || volumeCm3 <= 0) return null;
+  if (!Number.isFinite(aireCm2) || aireCm2 <= 0) return null;
 
-  return Math.round(volumeCm3 * 100) / 100;
+  return {
+    volumeCm3: Math.round(volumeCm3 * 100) / 100,
+    aireCm2: Math.round(aireCm2 * 100) / 100,
+  };
 }
 
 export function formatTaille(octets: number): string {
