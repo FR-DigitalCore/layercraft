@@ -282,8 +282,12 @@ DATABASE_URL="postgresql://user:MOTDEPASSE@127.0.0.1:5432/impression3d" \
 
 Automatique : tout `push` sur `main` déclenche le workflow
 `.github/workflows/deploiement.yml`, qui vérifie (lint, types, build) puis,
-si tout passe, se connecte au serveur en SSH et y lance
-`scripts/deployer.sh`. Une pull request ne déclenche que la vérification.
+si tout passe, dépose `scripts/deployer.sh` sur le serveur et l'exécute en
+SSH. Une pull request ne déclenche que la vérification.
+
+Le script est envoyé depuis le runner, et non pris dans la copie du
+serveur : celle-ci date forcément d'avant la mise à jour, et un script
+ajouté ou corrigé par le commit déployé ne s'y trouverait pas.
 
 À la main, c'est le même script :
 
