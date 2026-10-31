@@ -52,12 +52,18 @@ if definir_si_absent NEXTAUTH_SECRET "$(openssl rand -base64 32)"; then
 fi
 
 MDP_ADMIN=""
-if ! grep -qE '^ADMIN_PASSWORD_HASH="\$2[aby]\$' .env; then
+if ! grep -qE "^ADMIN_PASSWORD_HASH='\\\$2[aby]\\\$" .env; then
   MDP_ADMIN=$(openssl rand -base64 18 | tr -d '/+=' | cut -c1-16)
-  HASH=$(node scripts/hash-password.mjs "$MDP_ADMIN")
-  definir_si_absent ADMIN_PASSWORD_HASH "$HASH" || \
-    sed -i.bak "s|^ADMIN_PASSWORD_HASH=.*|ADMIN_PASSWORD_HASH=\"${HASH}\"|" .env
-  rm -f .env.bak
+  # Le script imprime la ligne entière, guillemets simples compris : un hash
+  # bcrypt contient des `$` que docker-compose interpoléerait entre
+  # guillemets doubles, livrant un hash tronqué au conteneur.
+  LIGNE=$(node scripts/hash-password.mjs "$MDP_ADMIN")
+  if grep -qE '^ADMIN_PASSWORD_HASH=' .env; then
+    sed -i.bak "s|^ADMIN_PASSWORD_HASH=.*|${LIGNE}|" .env
+    rm -f .env.bak
+  else
+    printf '%s\n' "$LIGNE" >> .env
+  fi
   vert "✓ Mot de passe administrateur généré"
 fi
 

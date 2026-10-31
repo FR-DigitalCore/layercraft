@@ -17,5 +17,8 @@ export const site = {
   },
   zone: "France métropolitaine et Corse",
   siret: "932 438 815 00023",
-  url: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
+  // Sans la barre finale : l'URL est concaténée à des chemins commençant
+  // eux-mêmes par « / », et un `https://exemple.fr/` donnerait des liens à
+  // double barre dans les emails et le sitemap.
+  url: (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/+$/, ""),
 } as const;
