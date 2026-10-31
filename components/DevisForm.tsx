@@ -48,6 +48,7 @@ type Fichier = {
   nom: string;
   taille: number;
   volumeCm3: number | null;
+  aireCm2: number | null;
 };
 
 const ETAPES = ["Votre fichier", "Configuration", "Contact"] as const;
@@ -99,8 +100,12 @@ export function DevisForm({
   }));
 
   const masseG = useMemo(
-    () => estimerMasseG({ matiere, quantite, volumeCm3: fichier?.volumeCm3 }, grille),
-    [matiere, quantite, fichier?.volumeCm3, grille],
+    () =>
+      estimerMasseG(
+        { matiere, quantite, volumeCm3: fichier?.volumeCm3, aireCm2: fichier?.aireCm2 },
+        grille,
+      ),
+    [matiere, quantite, fichier?.volumeCm3, fichier?.aireCm2, grille],
   );
 
   const fraisParMode = useMemo(
@@ -119,10 +124,16 @@ export function DevisForm({
   const detail = useMemo(
     () =>
       detaillerPrix(
-        { matiere, qualite, quantite, volumeCm3: fichier?.volumeCm3 },
+        {
+          matiere,
+          qualite,
+          quantite,
+          volumeCm3: fichier?.volumeCm3,
+          aireCm2: fichier?.aireCm2,
+        },
         grille,
       ),
-    [matiere, qualite, quantite, fichier?.volumeCm3, grille],
+    [matiere, qualite, quantite, fichier?.volumeCm3, fichier?.aireCm2, grille],
   );
 
   async function televerser(f: File) {
@@ -150,6 +161,7 @@ export function DevisForm({
         nom: corps.nom,
         taille: corps.taille,
         volumeCm3: corps.volumeCm3 ?? null,
+        aireCm2: corps.aireCm2 ?? null,
       });
     } catch (e) {
       setErreur(e instanceof Error ? e.message : "Envoi impossible.");

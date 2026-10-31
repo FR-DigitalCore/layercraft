@@ -1,5 +1,5 @@
 import type { ModeLivraison } from "@prisma/client";
-import { MATIERE_INFOS, type Matiere, type GrilleTarifaire } from "@/lib/prix";
+import { MATIERE_INFOS, volumeDepose, type Matiere, type GrilleTarifaire } from "@/lib/prix";
 
 export const MODES_LIVRAISON: ModeLivraison[] = [
   "RETRAIT",
@@ -97,7 +97,12 @@ const MARGE_EMBALLAGE = 1.1;
  * retombe sur le volume par défaut de la grille tarifaire.
  */
 export function estimerMasseG(
-  config: { matiere: Matiere; quantite: number; volumeCm3?: number | null },
+  config: {
+    matiere: Matiere;
+    quantite: number;
+    volumeCm3?: number | null;
+    aireCm2?: number | null;
+  },
   grille: GrilleTarifaire,
 ): number {
   const volume =
@@ -106,8 +111,10 @@ export function estimerMasseG(
       : grille.volumeParDefaut;
 
   const densite = grille.matieres[config.matiere]?.densite ?? 1.24;
-  const remplissage = Math.max(0.35, Math.min(1, grille.tauxRemplissage));
-  const massePieces = volume * remplissage * densite * config.quantite;
+  // Même modèle de dépôt que la tarification : une masse calculée autrement
+  // ferait diverger le prix annoncé et le palier de port facturé.
+  const volumeUtile = volumeDepose(volume, grille.tauxRemplissage, config.aireCm2);
+  const massePieces = volumeUtile * densite * config.quantite;
 
   return Math.round(massePieces * MARGE_EMBALLAGE + MASSE_EMBALLAGE_G);
 }

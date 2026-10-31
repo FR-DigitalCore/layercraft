@@ -165,6 +165,8 @@ export type ConfigPrix = {
   quantite: number;
   /** Volume brut du STL en cm³. Absent = volume par défaut de la grille. */
   volumeCm3?: number | null;
+  /** Aire du maillage en cm², qui affine la part de coque pleine. */
+  aireCm2?: number | null;
 };
 
 export type DetailPrix = {
@@ -186,8 +188,38 @@ export type DetailPrix = {
  * pièce, mais parois et couches pleines en consomment toujours une partie.
  * On borne donc à 35 % minimum du volume brut pour ne pas sous-facturer.
  */
-function volumeDepose(volumeBrut: number, tauxRemplissage: number): number {
-  return volumeBrut * Math.max(0.35, Math.min(1, tauxRemplissage));
+/**
+ * Épaisseur de la coque pleine : parois verticales, et couches pleines du
+ * dessus et du dessous. 1,2 mm correspond à trois périmètres d'une buse de
+ * 0,4 mm, réglage courant. À ajuster si votre profil d'impression diffère.
+ */
+const EPAISSEUR_PAROI_CM = 0.12;
+
+/**
+ * Volume de matière réellement déposée, en cm³.
+ *
+ * Appliquer le taux de remplissage au volume entier sous-estime lourdement
+ * les petites pièces : à 1 cm³, la coque occupe tout, et le slicer dépose
+ * l'équivalent du volume plein. On retire donc d'abord la coque, et le
+ * remplissage ne porte que sur l'intérieur.
+ *
+ * `aireCm2` vient du maillage. À défaut — STL ASCII, estimation sans
+ * fichier — on prend l'aire d'un cube de même volume, qui minore l'aire
+ * réelle de toute forme un peu travaillée : l'estimation reste prudente.
+ */
+export function volumeDepose(
+  volumeBrut: number,
+  tauxRemplissage: number,
+  aireCm2?: number | null,
+): number {
+  const aire =
+    typeof aireCm2 === "number" && aireCm2 > 0
+      ? aireCm2
+      : 6 * Math.cbrt(volumeBrut * volumeBrut);
+
+  const coque = Math.min(volumeBrut, aire * EPAISSEUR_PAROI_CM);
+  const interieur = volumeBrut - coque;
+  return coque + interieur * Math.min(1, Math.max(0.01, tauxRemplissage));
 }
 
 /** Calcul détaillé, utilisé par le simulateur de l'admin. */
@@ -218,7 +250,7 @@ export function detaillerPrix(
     };
   }
 
-  const volumeUtile = volumeDepose(volumeCm3, grille.tauxRemplissage);
+  const volumeUtile = volumeDepose(volumeCm3, grille.tauxRemplissage, config.aireCm2);
   const masseG = volumeUtile * matiere.densite;
   const coutMatiere = masseG * matiere.prixParGramme;
 
