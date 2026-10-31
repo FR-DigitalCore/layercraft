@@ -64,5 +64,11 @@ jobs:
           PORT: ${{ secrets.VPS_PORT || '22' }}
           CHEMIN: ${{ secrets.VPS_PATH || '/opt/layercraft' }}
         run: |
-          ssh -i ~/.ssh/id_deploy -p "$PORT" "$UTILISATEUR@$HOTE" \
+          # BatchMode : jamais d'invite interactive, la CI échoue au lieu
+          # d'attendre. StrictHostKeyChecking=yes : refuse un hôte dont la
+          # clé n'est pas celle de VPS_HOST_KEY — pour un port non standard,
+          # l'entrée doit avoir été relevée sur ce même port.
+          ssh -i ~/.ssh/id_deploy -p "$PORT" \
+            -o BatchMode=yes -o StrictHostKeyChecking=yes \
+            "$UTILISATEUR@$HOTE" \
             "cd '$CHEMIN' && BRANCHE=main bash scripts/deployer.sh"
