@@ -1,20 +1,28 @@
 #!/usr/bin/env bash
 # Déploie la version courante de la branche sur la machine où il tourne.
-# Appelé par la CI en SSH, ou à la main depuis le dossier du projet :
+#
+# À lancer depuis le dossier du projet :
 #   bash scripts/deployer.sh
+#
+# La CI le dépose d'abord sur le serveur par scp, puis l'exécute de la même
+# façon : c'est le script du commit déployé qui tourne, et non la copie du
+# serveur, qui date par construction d'avant la mise à jour.
 set -euo pipefail
 
-cd "$(dirname "$0")/.."
+if [ ! -f docker-compose.yml ]; then
+  echo "✗ à lancer depuis le dossier du projet (docker-compose.yml introuvable)" >&2
+  exit 1
+fi
 
 BRANCHE="${BRANCHE:-main}"
 CONTENEUR="${CONTENEUR:-layercraft-app}"
 
 echo "→ Récupération de origin/$BRANCHE"
 git fetch --prune origin "$BRANCHE"
-# reset plutôt que pull : la copie du serveur n'est jamais modifiée à la
-# main, et un pull échouerait sur le moindre fichier divergent. Le .env
-# n'est pas suivi, il n'est donc pas touché.
-git reset --hard "origin/$BRANCHE"
+# checkout -f -B plutôt qu'un pull : la copie du serveur n'est jamais
+# modifiée à la main, et cette forme fonctionne quelle que soit la branche
+# sur laquelle elle se trouvait. Le .env n'étant pas suivi, il est intact.
+git checkout -f -B "$BRANCHE" "origin/$BRANCHE"
 
 echo "→ Construction de l'image"
 docker compose build

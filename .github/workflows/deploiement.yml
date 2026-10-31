@@ -47,6 +47,10 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     steps:
+      # Le script de déploiement est envoyé au serveur depuis ce checkout :
+      # il faut donc l'avoir sous la main.
+      - uses: actions/checkout@v4
+
       - name: Préparer la clé SSH
         run: |
           install -m 700 -d ~/.ssh
@@ -68,7 +72,12 @@ jobs:
           # d'attendre. StrictHostKeyChecking=yes : refuse un hôte dont la
           # clé n'est pas celle de VPS_HOST_KEY — pour un port non standard,
           # l'entrée doit avoir été relevée sur ce même port.
-          ssh -i ~/.ssh/id_deploy -p "$PORT" \
-            -o BatchMode=yes -o StrictHostKeyChecking=yes \
-            "$UTILISATEUR@$HOTE" \
-            "cd '$CHEMIN' && BRANCHE=main bash scripts/deployer.sh"
+          SSH_OPTS=(-i ~/.ssh/id_deploy -o BatchMode=yes -o StrictHostKeyChecking=yes)
+
+          # Le script est déposé puis exécuté, plutôt que lu sur l'entrée
+          # standard : `docker compose run` y lirait le reste du script.
+          scp "${SSH_OPTS[@]}" -P "$PORT" \
+            scripts/deployer.sh "$UTILISATEUR@$HOTE:/tmp/layercraft-deployer.sh"
+
+          ssh "${SSH_OPTS[@]}" -p "$PORT" "$UTILISATEUR@$HOTE" \
+            "cd '$CHEMIN' && BRANCHE=main bash /tmp/layercraft-deployer.sh"
