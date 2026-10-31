@@ -124,10 +124,17 @@ export default function ConfidentialitePage() {
 
       <h2>Transferts hors Union européenne</h2>
       <p>
-        Nos prestataires traitent les données au sein de l&apos;Union
-        européenne. Lorsqu&apos;un transfert vers un pays tiers est nécessaire,
-        il est encadré par les clauses contractuelles types de la Commission
-        européenne.
+        Le site et la base de données sont hébergés en Suisse, chez{" "}
+        {entreprise.hebergeur.nom}. La Suisse bénéficie d&apos;une décision
+        d&apos;adéquation de la Commission européenne : ce transfert
+        n&apos;appelle aucune garantie supplémentaire.
+      </p>
+      <p>
+        Les paiements sont traités par Stripe Payments Europe, au sein de
+        l&apos;Union européenne. L&apos;envoi des emails passe par Resend, dont
+        les serveurs sont situés aux États-Unis ; ce transfert est encadré par
+        les clauses contractuelles types de la Commission européenne prévues à
+        son accord de traitement des données.
       </p>
 
       <h2>Sécurité</h2>

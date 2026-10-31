@@ -16,13 +16,17 @@ export default function MentionsLegalesPage() {
       <h2>Éditeur du site</h2>
       <p>
         {entreprise.raisonSociale}, {entreprise.formeJuridique}
-        {entreprise.capitalSocial ? ` au capital de ${entreprise.capitalSocial}` : ""}.
+        {entreprise.capitalSocial ? ` au capital de ${entreprise.capitalSocial}` : ""}
+        {entreprise.nomCommercial
+          ? `, exerçant sous le nom commercial ${entreprise.nomCommercial}`
+          : ""}
+        .
         <br />
         Siège social : {adresseSiege()}
         <br />
         SIRET : {entreprise.siret}
         <br />
-        RCS : {entreprise.rcs}
+        Immatriculation : {entreprise.immatriculation}
         <br />
         {entreprise.assujettiTva ? (
           <>TVA intracommunautaire : {entreprise.tvaIntracom}</>

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { site } from "@/lib/site";
-import { adresseSiege, entreprise } from "@/lib/entreprise";
+import { adresseSiege, entreprise, mediateurRenseigne } from "@/lib/entreprise";
 import { Prose } from "@/components/Prose";
 import { AvertissementPlaceholders } from "@/components/AvertissementPlaceholders";
 
@@ -134,14 +134,26 @@ export default function CgvPage() {
       <p>
         En cas de différend, le client s&apos;adresse d&apos;abord à{" "}
         {entreprise.raisonSociale} à l&apos;adresse{" "}
-        <a href={`mailto:${site.email}`}>{site.email}</a>. À défaut de solution
-        amiable, le consommateur peut recourir gratuitement au médiateur de la
-        consommation : {entreprise.mediateur.nom}, {entreprise.mediateur.site}.
+        <a href={`mailto:${site.email}`}>{site.email}</a>.
       </p>
-      <p>
-        Le client peut également utiliser la plateforme européenne de règlement
-        en ligne des litiges. Les présentes sont soumises au droit français.
-      </p>
+      {mediateurRenseigne() ? (
+        <p>
+          À défaut de solution amiable, le consommateur peut recourir
+          gratuitement au médiateur de la consommation :{" "}
+          {entreprise.mediateur.nom}, {entreprise.mediateur.site}.
+        </p>
+      ) : (
+        <p>
+          À défaut de solution amiable, le consommateur peut recourir
+          gratuitement à un médiateur de la consommation. Notre adhésion à un
+          dispositif de médiation est en cours : les coordonnées du médiateur
+          figureront ici dès qu&apos;elle sera effective.
+        </p>
+      )}
+      {/* La plateforme européenne de règlement en ligne des litiges, qu'il
+          fallait auparavant mentionner, a fermé le 20 juillet 2025 : le
+          règlement (UE) 2024/3228 l'a supprimée et a abrogé l'obligation. */}
+      <p>Les présentes sont soumises au droit français.</p>
     </Prose>
   );
 }

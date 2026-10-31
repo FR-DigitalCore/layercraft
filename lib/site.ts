@@ -7,15 +7,15 @@ export const site = {
   baseline: "Impression 3D sur mesure, partout en France",
   description:
     "Service d'impression 3D en ligne : devis immédiat, conseil technique, conception et impression de pièces sur mesure en PLA, PETG, ASA et TPU. Livraison partout en France.",
-  email: "contact@layercraft.fr",
-  telephone: "+33 6 00 00 00 00",
+  email: "devis@layercraft.fr",
+  telephone: "+33 7 82 49 87 35",
   adresse: {
-    rue: "1 rue de l'Exemple",
-    codePostal: "75000",
-    ville: "Paris",
+    rue: "235 chemin de Bezaton",
+    codePostal: "01310",
+    ville: "Polliat",
     pays: "FR",
   },
   zone: "France métropolitaine et Corse",
-  siret: "000 000 000 00000",
+  siret: "932 438 815 00023",
   url: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
 } as const;

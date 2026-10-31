@@ -280,12 +280,65 @@ DATABASE_URL="postgresql://user:MOTDEPASSE@127.0.0.1:5432/impression3d" \
 
 ### Mise à jour
 
+Automatique : tout `push` sur `main` déclenche le workflow
+`.github/workflows/deploiement.yml`, qui vérifie (lint, types, build) puis,
+si tout passe, se connecte au serveur en SSH et y lance
+`scripts/deployer.sh`. Une pull request ne déclenche que la vérification.
+
+À la main, c'est le même script :
+
 ```bash
-git pull
-docker compose build
-docker compose run --rm migrate
-docker compose up -d
+bash scripts/deployer.sh
 ```
+
+Il récupère `origin/main`, reconstruit l'image, joue les migrations,
+redémarre, puis attend que le conteneur repasse *healthy* — et affiche les
+journaux en échouant si ce n'est pas le cas au bout de trois minutes.
+
+#### Mettre en place le déploiement automatique
+
+Sur le serveur, créer une clé dédiée au déploiement et l'autoriser :
+
+```bash
+ssh-keygen -t ed25519 -f ~/.ssh/layercraft-deploy -N "" -C "github-actions"
+cat ~/.ssh/layercraft-deploy.pub >> ~/.ssh/authorized_keys
+cat ~/.ssh/layercraft-deploy        # la clé privée, à copier dans le secret
+```
+
+Puis l'empreinte du serveur. **Préciser le port si SSH n'écoute pas sur
+22** : sans `-p`, `ssh-keyscan` interroge le port par défaut et ne renvoie
+rien du tout.
+
+```bash
+ssh-keyscan -p <port> -H <ip-ou-domaine>
+```
+
+La sortie commence alors par `|1|…` suivi de la clé ; pour un port non
+standard, l'hôte y est noté `[hôte]:port`, forme qu'attend `known_hosts` —
+d'où l'intérêt de laisser `ssh-keyscan` l'écrire plutôt que de la composer
+à la main. Reporter toutes les lignes renvoyées.
+
+Enfin, dans *Settings → Secrets and variables → Actions* du dépôt :
+
+| Secret | Valeur |
+|---|---|
+| `VPS_HOST` | l'IP ou le domaine du serveur |
+| `VPS_PORT` | le port SSH — à renseigner s'il n'est pas `22` |
+| `VPS_USER` | l'utilisateur SSH |
+| `VPS_SSH_KEY` | le contenu de la clé **privée** |
+| `VPS_HOST_KEY` | la sortie de `ssh-keyscan` |
+| `VPS_PATH` | facultatif, `/opt/layercraft` par défaut |
+
+Le port doit être le même dans `VPS_PORT` et dans l'empreinte : une entrée
+`known_hosts` relevée sur le 22 ne vaut pas pour une connexion sur un autre
+port, et la CI échouerait sur un hôte inconnu.
+
+`VPS_HOST_KEY` n'est pas décoratif : sans empreinte connue, la CI
+accepterait n'importe quelle machine répondant à cette adresse et lui
+livrerait sa clé privée.
+
+Le serveur doit pouvoir faire `git fetch` tout seul — c'est déjà le cas si
+le dépôt y a été cloné avec un accès en lecture.
 
 ### Reste à faire avant la mise en ligne
 

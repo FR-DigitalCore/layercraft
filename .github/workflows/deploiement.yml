@@ -1,0 +1,74 @@
+name: Vérification et déploiement
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# Un déploiement à la fois : deux `docker compose build` concurrents sur le
+# même serveur se marcheraient dessus.
+concurrency:
+  group: deploiement-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verifier:
+    name: Lint, types et build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # postinstall lance `prisma generate`, nécessaire au typecheck.
+      - run: npm ci
+
+      - run: npm run lint
+
+      - run: npm run typecheck
+
+      # Le build ne touche pas la base : aucune page n'est prérendue à
+      # partir de Prisma. L'URL est factice mais doit être syntaxiquement
+      # valide, Prisma la parse au chargement du client.
+      - name: Build
+        run: npm run build
+        env:
+          DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/ci
+          NEXT_PUBLIC_SITE_URL: https://example.invalid
+
+  deployer:
+    name: Déploiement sur le VPS
+    needs: verifier
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Préparer la clé SSH
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          # Empreinte du serveur fournie en secret : sans elle, SSH
+          # accepterait n'importe quel hôte se présentant à cette adresse.
+          printf '%s\n' "${{ secrets.VPS_HOST_KEY }}" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Lancer le déploiement
+        env:
+          HOTE: ${{ secrets.VPS_HOST }}
+          UTILISATEUR: ${{ secrets.VPS_USER }}
+          PORT: ${{ secrets.VPS_PORT || '22' }}
+          CHEMIN: ${{ secrets.VPS_PATH || '/opt/layercraft' }}
+        run: |
+          # BatchMode : jamais d'invite interactive, la CI échoue au lieu
+          # d'attendre. StrictHostKeyChecking=yes : refuse un hôte dont la
+          # clé n'est pas celle de VPS_HOST_KEY — pour un port non standard,
+          # l'entrée doit avoir été relevée sur ce même port.
+          ssh -i ~/.ssh/id_deploy -p "$PORT" \
+            -o BatchMode=yes -o StrictHostKeyChecking=yes \
+            "$UTILISATEUR@$HOTE" \
+            "cd '$CHEMIN' && BRANCHE=main bash scripts/deployer.sh"
