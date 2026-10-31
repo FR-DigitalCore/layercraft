@@ -6,7 +6,7 @@ import { chargerGrille } from "@/lib/tarifs";
 import { chargerConfigLivraison } from "@/lib/tarifs-livraison";
 import { calculerFraisPort, estimerMasseG, modesDisponibles } from "@/lib/livraison";
 import { BUCKET_STL, lireFichier } from "@/lib/minio";
-import { calculerVolumeCm3 } from "@/lib/stl";
+import { mesurerStl, type MesuresStl } from "@/lib/stl";
 import { genererToken } from "@/lib/tokens";
 import { envoyerConfirmationClient, envoyerNotificationAdmin } from "@/lib/emails";
 import { ipDepuisRequete, limiter } from "@/lib/rate-limit";
@@ -18,9 +18,9 @@ export const runtime = "nodejs";
  * bloquant : le devis part sans volume, la tarification retombe alors sur le
  * volume par défaut de la grille.
  */
-async function mesurerVolume(stlKey: string): Promise<number | null> {
+async function mesurerVolume(stlKey: string): Promise<MesuresStl | null> {
   try {
-    return calculerVolumeCm3(await lireFichier(BUCKET_STL, stlKey));
+    return mesurerStl(await lireFichier(BUCKET_STL, stlKey));
   } catch (erreur) {
     console.error("[devis] mesure du volume impossible", erreur);
     return null;
@@ -78,10 +78,12 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
-    const volumeCm3 = donnees.stlKey ? await mesurerVolume(donnees.stlKey) : null;
+    const mesures = donnees.stlKey ? await mesurerVolume(donnees.stlKey) : null;
+    const volumeCm3 = mesures?.volumeCm3 ?? null;
+    const aireCm2 = mesures?.aireCm2 ?? null;
 
     const masseG = estimerMasseG(
-      { matiere: donnees.matiere, quantite: donnees.quantite, volumeCm3 },
+      { matiere: donnees.matiere, quantite: donnees.quantite, volumeCm3, aireCm2 },
       grille,
     );
     // null quand la masse sort de la grille : le port est alors chiffré à la

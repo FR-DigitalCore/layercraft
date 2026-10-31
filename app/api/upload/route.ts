@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { BUCKET_STL, envoyerFichier, urlSignee } from "@/lib/minio";
 import { genererCleFichier } from "@/lib/tokens";
 import {
-  calculerVolumeCm3,
+  mesurerStl,
   estStlValide,
   extensionAutorisee,
   TAILLE_MAX_STL,
@@ -90,7 +90,7 @@ export async function POST(request: Request) {
       taille: fichier.size,
       // Sert à l'estimation affichée en direct ; le serveur le recalcule à la
       // création du devis, la valeur renvoyée ici n'est jamais reprise en base.
-      volumeCm3: calculerVolumeCm3(buffer),
+      ...(mesurerStl(buffer) ?? { volumeCm3: null, aireCm2: null }),
     });
   } catch (erreur) {
     console.error(
