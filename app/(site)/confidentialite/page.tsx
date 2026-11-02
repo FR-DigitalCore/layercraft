@@ -4,6 +4,7 @@ import { adresseSiege, entreprise } from "@/lib/entreprise";
 import { Prose } from "@/components/Prose";
 import { AvertissementPlaceholders } from "@/components/AvertissementPlaceholders";
 import { umamiActif } from "@/lib/analytics";
+import { JsonLdFilAriane } from "@/components/JsonLd";
 
 export const metadata: Metadata = {
   title: "Politique de confidentialité",
@@ -13,6 +14,8 @@ export const metadata: Metadata = {
 
 export default function ConfidentialitePage() {
   return (
+    <>
+    <JsonLdFilAriane elements={[{ nom: "Politique de confidentialité", chemin: "/confidentialite" }]} />
     <Prose titre="Politique de confidentialité" avant={<AvertissementPlaceholders />}>
       <h2>Responsable de traitement</h2>
       <p>
@@ -161,5 +164,6 @@ export default function ConfidentialitePage() {
         .
       </p>
     </Prose>
+    </>
   );
 }

@@ -5,7 +5,8 @@ import { listerRealisations } from "@/lib/realisations";
 import { ButtonLink } from "@/components/ui/Button";
 import { Card, TitreSection } from "@/components/ui/Card";
 import { CarteRealisation } from "@/components/GalerieGrid";
-import { JsonLdService } from "@/components/JsonLd";
+import { JsonLdFaq, JsonLdService } from "@/components/JsonLd";
+import { FAQ } from "@/lib/faq";
 
 export const metadata: Metadata = {
   alternates: { canonical: "/" },
@@ -41,6 +42,7 @@ export default async function HomePage() {
   return (
     <>
       <JsonLdService />
+      <JsonLdFaq questions={FAQ} />
 
       {/* Hero */}
       <section className="fond-hero border-b border-border">
@@ -157,6 +159,21 @@ export default async function HomePage() {
               </Card>
             );
           })}
+        </div>
+      </section>
+
+      {/* Questions fréquentes */}
+      <section id="faq" className="conteneur scroll-mt-20 py-20">
+        <TitreSection surtitre="Questions fréquentes" titre="Ce qu'on nous demande le plus" />
+        {/* Réponses toujours visibles : le balisage FAQPage impose que le
+            visiteur lise exactement ce que le moteur indexe. */}
+        <div className="mt-12 grid gap-x-10 gap-y-8 md:grid-cols-2">
+          {FAQ.map(({ question, reponse }) => (
+            <div key={question}>
+              <h3 className="text-base font-semibold">{question}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted">{reponse}</p>
+            </div>
+          ))}
         </div>
       </section>
 
