@@ -6,8 +6,11 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
-      // Les pages de suivi sont publiques mais nominatives : hors index.
-      disallow: ["/admin", "/api", "/suivi"],
+      // Pages nominatives ou sans intérêt pour l'index. Les pages
+      // concernées portent aussi un meta robots noindex : un Disallow
+      // seul n'empêche pas l'indexation d'une URL découverte par un
+      // lien, il empêche seulement de la lire.
+      disallow: ["/admin", "/api", "/suivi", "/mon-compte", "/connexion"],
     },
     sitemap: `${site.url}/sitemap.xml`,
   };

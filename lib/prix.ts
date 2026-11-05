@@ -171,8 +171,10 @@ export type ConfigPrix = {
 
 export type DetailPrix = {
   total: number;
-  /** Détail unitaire, avant quantité et remise. */
+  /** Part variable d'une pièce, hors frais fixes, avant quantité et remise. */
   parPiece: number;
+  /** Frais de mise en route, comptés une seule fois pour la commande. */
+  fraisFixes: number;
   remise: number;
   /** Volume effectivement utilisé pour le calcul, en cm³. */
   volumeCm3: number;
@@ -183,11 +185,6 @@ export type DetailPrix = {
   volumeEstime: boolean;
 };
 
-/**
- * Volume réellement déposé : le remplissage ne s'applique qu'au coeur de la
- * pièce, mais parois et couches pleines en consomment toujours une partie.
- * On borne donc à 35 % minimum du volume brut pour ne pas sous-facturer.
- */
 /**
  * Épaisseur de la coque pleine : parois verticales, et couches pleines du
  * dessus et du dessous. 1,2 mm correspond à trois périmètres d'une buse de
@@ -242,6 +239,7 @@ export function detaillerPrix(
     return {
       total: arrondir(parPiece * config.quantite * remise),
       parPiece: arrondir(parPiece),
+      fraisFixes: 0,
       remise,
       volumeCm3,
       masseG: null,
@@ -255,10 +253,11 @@ export function detaillerPrix(
   const coutMatiere = masseG * matiere.prixParGramme;
 
   if (grille.mode === "MATIERE") {
-    const parPiece = grille.fraisMiseEnRoute + coutMatiere * qualite.multiplicateur;
+    const parPiece = coutMatiere * qualite.multiplicateur;
     return {
-      total: arrondir(parPiece * config.quantite * remise),
+      total: arrondir(grille.fraisMiseEnRoute + parPiece * config.quantite * remise),
       parPiece: arrondir(parPiece),
+      fraisFixes: arrondir(grille.fraisMiseEnRoute),
       remise,
       volumeCm3,
       masseG: Math.round(masseG * 10) / 10,
@@ -268,10 +267,11 @@ export function detaillerPrix(
   }
 
   const heures = volumeUtile / Math.max(0.1, qualite.debitCm3ParHeure);
-  const parPiece = grille.fraisMiseEnRoute + coutMatiere + heures * grille.prixHoraire;
+  const parPiece = coutMatiere + heures * grille.prixHoraire;
   return {
-    total: arrondir(parPiece * config.quantite * remise),
+    total: arrondir(grille.fraisMiseEnRoute + parPiece * config.quantite * remise),
     parPiece: arrondir(parPiece),
+    fraisFixes: arrondir(grille.fraisMiseEnRoute),
     remise,
     volumeCm3,
     masseG: Math.round(masseG * 10) / 10,

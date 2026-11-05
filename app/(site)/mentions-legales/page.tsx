@@ -3,6 +3,7 @@ import { site } from "@/lib/site";
 import { adresseSiege, entreprise } from "@/lib/entreprise";
 import { Prose } from "@/components/Prose";
 import { AvertissementPlaceholders } from "@/components/AvertissementPlaceholders";
+import { JsonLdFilAriane } from "@/components/JsonLd";
 
 export const metadata: Metadata = {
   title: "Mentions légales",
@@ -12,6 +13,8 @@ export const metadata: Metadata = {
 
 export default function MentionsLegalesPage() {
   return (
+    <>
+    <JsonLdFilAriane elements={[{ nom: "Mentions légales", chemin: "/mentions-legales" }]} />
     <Prose titre="Mentions légales" avant={<AvertissementPlaceholders />}>
       <h2>Éditeur du site</h2>
       <p>
@@ -106,5 +109,6 @@ export default function MentionsLegalesPage() {
         <a href="/cgv">conditions générales de vente</a>.
       </p>
     </Prose>
+    </>
   );
 }

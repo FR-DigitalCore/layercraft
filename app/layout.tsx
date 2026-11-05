@@ -15,6 +15,11 @@ const spaceGrotesk = Space_Grotesk({
   display: "swap",
 });
 
+// Renseigner GOOGLE_SITE_VERIFICATION pour valider la propriété du domaine
+// dans la Search Console sans toucher au DNS. Absente, aucune balise n'est
+// émise.
+const verificationGoogle = process.env.GOOGLE_SITE_VERIFICATION;
+
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
   title: {
@@ -35,6 +40,9 @@ export const metadata: Metadata = {
     title: `Impression 3D en ligne – Devis immédiat – ${site.nom}`,
     description: site.description,
   },
+  ...(verificationGoogle
+    ? { verification: { google: verificationGoogle } }
+    : {}),
 };
 
 export const viewport: Viewport = {

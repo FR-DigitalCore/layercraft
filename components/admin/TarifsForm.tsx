@@ -647,6 +647,8 @@ export function TarifsForm({ grilleInitiale }: { grilleInitiale: GrilleTarifaire
                 </div>
                 <p className="mt-1.5 text-xs text-muted">
                   {formatPrix(detail.parPiece)} / pièce
+                  {detail.fraisFixes > 0 &&
+                    ` + ${formatPrix(detail.fraisFixes)} de mise en route`}
                   {detail.masseG !== null && ` · ${detail.masseG} g`}
                   {detail.heures !== null && ` · ${detail.heures.toFixed(2)} h`}
                   {detail.remise < 1 &&

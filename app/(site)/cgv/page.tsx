@@ -3,6 +3,7 @@ import { site } from "@/lib/site";
 import { adresseSiege, entreprise, mediateurRenseigne } from "@/lib/entreprise";
 import { Prose } from "@/components/Prose";
 import { AvertissementPlaceholders } from "@/components/AvertissementPlaceholders";
+import { JsonLdFilAriane } from "@/components/JsonLd";
 
 export const metadata: Metadata = {
   title: "Conditions générales de vente",
@@ -12,6 +13,8 @@ export const metadata: Metadata = {
 
 export default function CgvPage() {
   return (
+    <>
+    <JsonLdFilAriane elements={[{ nom: "Conditions générales de vente", chemin: "/cgv" }]} />
     <Prose
       titre="Conditions générales de vente"
       avant={<AvertissementPlaceholders />}
@@ -155,5 +158,6 @@ export default function CgvPage() {
           règlement (UE) 2024/3228 l'a supprimée et a abrogé l'obligation. */}
       <p>Les présentes sont soumises au droit français.</p>
     </Prose>
+    </>
   );
 }

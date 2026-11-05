@@ -5,6 +5,7 @@ import { TitreSection } from "@/components/ui/Card";
 import { chargerGrille } from "@/lib/tarifs";
 import { chargerConfigLivraison } from "@/lib/tarifs-livraison";
 import { modesDisponibles } from "@/lib/livraison";
+import { JsonLdFilAriane } from "@/components/JsonLd";
 
 export const metadata: Metadata = {
   title: "Demander un devis",
@@ -23,6 +24,8 @@ export default async function DevisPage() {
   ]);
 
   return (
+    <>
+    <JsonLdFilAriane elements={[{ nom: "Demander un devis", chemin: "/devis" }]} />
     <div className="conteneur py-16">
       <TitreSection
         surtitre="Devis"
@@ -41,5 +44,6 @@ export default async function DevisPage() {
         />
       </Suspense>
     </div>
+    </>
   );
 }

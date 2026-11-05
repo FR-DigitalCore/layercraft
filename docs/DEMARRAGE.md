@@ -360,8 +360,8 @@ Tout se règle depuis `/admin/tarifs`, y compris le **modèle de calcul** :
 | Mode | Formule | Volume du STL |
 |---|---|---|
 | `FORFAIT` | prix de base × coef. qualité × quantité × remise | non utilisé |
-| `MATIERE` | (mise en route + masse × prix/g × coef. qualité) × quantité × remise | requis |
-| `MATIERE_TEMPS` | (mise en route + masse × prix/g + heures × prix horaire) × quantité × remise | requis |
+| `MATIERE` | mise en route + masse × prix/g × coef. qualité × quantité × remise | requis |
+| `MATIERE_TEMPS` | mise en route + (masse × prix/g + heures × prix horaire) × quantité × remise | requis |
 
 Le simulateur affiche les trois modèles côte à côte sur une même pièce
 (matière, qualité, volume, quantité réglables) et se recalcule en direct.
