@@ -13,7 +13,7 @@ export function CarteRealisation({
   realisation: RealisationAffichee;
 }) {
   return (
-    <article className="group overflow-hidden rounded-xl border border-border bg-surface transition-colors hover:border-accent/40">
+    <article className="group overflow-hidden rounded-sm border border-border bg-surface transition-colors hover:border-accent/40">
       <div className="relative aspect-4/3 overflow-hidden bg-surface-haut">
         <Image
           src={realisation.imageUrl}
@@ -100,7 +100,7 @@ export function GalerieGrid({
           ))}
         </div>
       ) : (
-        <p className="mt-10 rounded-xl border border-border bg-surface p-8 text-center text-sm text-muted">
+        <p className="mt-10 rounded-sm border border-border bg-surface p-8 text-center text-sm text-muted">
           Aucune réalisation pour ce filtre.
         </p>
       )}
@@ -123,7 +123,7 @@ function BoutonFiltre({
       onClick={onClick}
       aria-pressed={actif}
       className={cn(
-        "rounded-full border px-3.5 py-1.5 text-sm transition-colors",
+        "rounded-sm border px-3.5 py-1.5 text-sm transition-colors",
         actif
           ? "border-accent bg-accent text-white"
           : "border-border bg-surface text-muted hover:border-muted/60 hover:text-text",

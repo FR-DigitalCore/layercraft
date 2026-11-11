@@ -109,7 +109,7 @@ export function ChoixLivraison({
               <label
                 key={mode}
                 className={cn(
-                  "flex cursor-pointer items-start justify-between gap-4 rounded-xl border p-4 transition-colors",
+                  "flex cursor-pointer items-start justify-between gap-4 rounded-sm border p-4 transition-colors",
                   actif
                     ? "border-accent bg-accent/5"
                     : "border-border bg-surface hover:border-muted/60",
@@ -152,7 +152,7 @@ export function ChoixLivraison({
                   <span className="mt-1 block text-xs text-muted">{i.delai}</span>
                 </span>
                 <span className="shrink-0 text-right">
-                  <span className="font-display font-bold">
+                  <span className="font-mono font-bold">
                     {frais === null ? "Sur devis" : frais === 0 ? "Gratuit" : formatPrix(frais)}
                   </span>
                 </span>
@@ -169,7 +169,7 @@ export function ChoixLivraison({
       </fieldset>
 
       {infos.adresse && (
-        <div className="space-y-4 rounded-xl border border-border bg-surface p-4">
+        <div className="space-y-4 rounded-sm border border-border bg-surface p-4">
           <AdresseBan
             modeCommune={infos.pointRelais}
             adresse={

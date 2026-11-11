@@ -10,7 +10,7 @@ export default async function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center px-5">
       <div className="w-full max-w-sm">
-        <p className="font-display mb-8 text-center text-lg font-bold">
+        <p className="font-mono mb-8 text-center text-lg font-bold">
           {site.nom}
           <span className="text-accent">.</span>
           <span className="ml-2 text-sm font-normal text-muted">administration</span>

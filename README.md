@@ -326,14 +326,15 @@ Palette sobre, technique, crédible :
 --color-bg: #0f0f0f;          /* fond sombre */
 --color-surface: #1a1a1a;
 --color-border: #2a2a2a;
---color-accent: #ff6b2b;      /* orange filament impression */
+--color-accent: #0b4f9e;      /* bleu technique */
 --color-text: #f0f0f0;
 --color-muted: #888;
 ```
 
 Variante light mode : blanc cassé `#f8f7f5`, texte `#1a1a1a`, accent identique.
 
-Typo : `Inter` (body) + `Space Grotesk` (titres). Google Fonts.
+Typo : `IBM Plex Sans` (texte et titres) + `IBM Plex Mono` (étiquettes, chiffres, tableaux). Google Fonts.
+Registre documentaire : fond clair unique, grille apparente, angles francs, pas de thème sombre.
 
 Composants à construire avec Tailwind, pas de dépendance UI externe lourde. Radix UI primitives si besoin d'accessibilité (dialog, select, etc.).
 

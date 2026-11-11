@@ -31,7 +31,7 @@ export default async function GaleriePage() {
       {realisations.length > 0 ? (
         <GalerieGrid realisations={realisations} tags={tags} />
       ) : (
-        <div className="mt-10 rounded-xl border border-border bg-surface p-10 text-center">
+        <div className="mt-10 rounded-sm border border-border bg-surface p-10 text-center">
           <p className="text-sm text-muted">
             La galerie se remplit — les premières réalisations seront publiées ici.
           </p>

@@ -16,7 +16,7 @@ export function CommandeStatus({
   if (statut === "ANNULE") {
     const annulation = evenements.find((e) => e.statut === "ANNULE");
     return (
-      <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-6">
+      <div className="rounded-sm border border-red-500/30 bg-red-500/5 p-6">
         <p className="font-semibold text-red-300">{STATUT_INFOS.ANNULE.label}</p>
         <p className="mt-1 text-sm text-muted">
           {annulation ? formatDate(annulation.createdAt) : null}
@@ -53,7 +53,7 @@ export function CommandeStatus({
             <span
               aria-hidden
               className={cn(
-                "relative mt-1 size-3.5 shrink-0 rounded-full border-2",
+                "relative mt-1 size-3.5 shrink-0 rounded-sm border-2",
                 actuelle
                   ? "border-accent bg-accent ring-4 ring-accent/20"
                   : franchie

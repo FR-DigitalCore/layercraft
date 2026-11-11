@@ -15,7 +15,7 @@ export default async function AdminLayout({
       <header className="border-b border-border bg-surface">
         <div className="conteneur flex h-16 items-center justify-between gap-6">
           <div className="flex items-center gap-8">
-            <Link href="/admin" className="font-display font-bold">
+            <Link href="/admin" className="font-mono font-bold">
               {site.nom}
               <span className="text-accent">.</span>
               <span className="ml-2 text-xs font-normal text-muted">admin</span>

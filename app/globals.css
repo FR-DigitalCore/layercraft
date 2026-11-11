@@ -1,28 +1,18 @@
 @import "tailwindcss";
 
-/* Design system — palette sobre, technique. Dark par défaut. */
+/* Design system — registre technique : papier clair, grille apparente,
+   chiffres en chasse fixe. Pas de thème sombre : le fond clair fait partie
+   du parti pris, et le basculement doublerait chaque décision. */
 :root {
-  --bg: #0f0f0f;
-  --surface: #1a1a1a;
-  --surface-haut: #202020;
-  --border: #2a2a2a;
-  --accent: #ff6b2b;
-  --accent-doux: #ff8a55;
-  --text: #f0f0f0;
-  --muted: #888888;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    --bg: #f8f7f5;
-    --surface: #ffffff;
-    --surface-haut: #f2f0ec;
-    --border: #e2dfd9;
-    --accent: #ff6b2b;
-    --accent-doux: #e0551a;
-    --text: #1a1a1a;
-    --muted: #6b6b6b;
-  }
+  --bg: #eef0f1;
+  --surface: #ffffff;
+  --surface-haut: #e4e7e9;
+  --border: #c9cdd1;
+  --border-fort: #9aa2a9;
+  --accent: #0b4f9e;
+  --accent-doux: #083c78;
+  --text: #15181b;
+  --muted: #5a6169;
 }
 
 @theme inline {
@@ -30,13 +20,20 @@
   --color-surface: var(--surface);
   --color-surface-haut: var(--surface-haut);
   --color-border: var(--border);
+  --color-border-fort: var(--border-fort);
   --color-accent: var(--accent);
   --color-accent-doux: var(--accent-doux);
   --color-text: var(--text);
   --color-muted: var(--muted);
 
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-space-grotesk), var(--font-inter), sans-serif;
+  --font-sans: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, SFMono-Regular, monospace;
+
+  /* Angles francs : le registre industriel ne s'arrondit pas. */
+  --radius-sm: 2px;
+  --radius-md: 3px;
+  --radius-lg: 3px;
+  --radius-xl: 3px;
 }
 
 @layer base {
@@ -51,15 +48,15 @@
   body {
     background-color: var(--bg);
     color: var(--text);
-    font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+    font-family: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
   }
 
   h1,
   h2,
   h3 {
-    font-family: var(--font-space-grotesk), var(--font-inter), sans-serif;
-    letter-spacing: -0.02em;
+    font-family: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: -0.015em;
   }
 
   ::selection {
@@ -76,13 +73,33 @@
 @utility conteneur {
   margin-inline: auto;
   width: 100%;
-  max-width: 72rem;
+  max-width: 76rem;
   padding-inline: 1.25rem;
 }
 
-/* Dégradé discret utilisé en fond de hero */
-@utility fond-hero {
+/* Étiquette de champ ou d'en-tête de tableau : chasse fixe, majuscules,
+   interlettrage ouvert. C'est elle qui donne le ton technique. */
+@utility etiquette {
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* Valeur chiffrée : chasse fixe et chiffres alignés, pour que les colonnes
+   de prix et de dimensions se lisent verticalement. */
+@utility chiffre {
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Trame de fond : une grille fine, visible sans être bruyante. Remplace le
+   dégradé lumineux de l'ancienne maquette. */
+@utility trame {
   background-image:
-    radial-gradient(60rem 30rem at 70% -10%, color-mix(in srgb, var(--accent) 14%, transparent), transparent),
-    radial-gradient(40rem 24rem at 10% 0%, color-mix(in srgb, var(--accent) 7%, transparent), transparent);
+    linear-gradient(to right, var(--border) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--border) 1px, transparent 1px);
+  background-size: 4rem 4rem;
+  background-position: -1px -1px;
 }

@@ -6,12 +6,11 @@ type Variante = "primaire" | "secondaire" | "fantome" | "danger";
 type Taille = "sm" | "md" | "lg";
 
 const VARIANTES: Record<Variante, string> = {
-  primaire:
-    "bg-accent text-white hover:bg-accent-doux disabled:hover:bg-accent shadow-sm",
+  primaire: "bg-accent text-white hover:bg-accent-doux disabled:hover:bg-accent",
   secondaire:
-    "bg-surface-haut text-text border border-border hover:border-accent/50",
+    "bg-surface text-text border border-border-fort hover:bg-surface-haut",
   fantome: "text-muted hover:text-text hover:bg-surface-haut",
-  danger: "bg-red-600 text-white hover:bg-red-500",
+  danger: "bg-red-700 text-white hover:bg-red-800",
 };
 
 const TAILLES: Record<Taille, string> = {
@@ -20,8 +19,10 @@ const TAILLES: Record<Taille, string> = {
   lg: "h-13 px-7 text-base",
 };
 
+// Angles francs et pas d'ombre portée : le relief appartient au registre
+// marketing, pas au registre documentaire.
 const BASE =
-  "inline-flex items-center justify-center gap-2 rounded-lg font-semibold transition-colors " +
+  "inline-flex items-center justify-center gap-2 rounded-sm font-semibold transition-colors " +
   "disabled:cursor-not-allowed disabled:opacity-50";
 
 export function classesBouton(variante: Variante = "primaire", taille: Taille = "md") {

@@ -9,8 +9,8 @@ function gabarit(titre: string, corps: string): string {
 <html lang="fr"><body style="margin:0;background:#f5f4f2;padding:24px;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#1a1a1a">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;margin:0 auto;background:#ffffff;border:1px solid #e5e3df;border-radius:12px">
     <tr><td style="padding:24px 28px;border-bottom:1px solid #e5e3df">
-      <span style="font-size:18px;font-weight:700;letter-spacing:-0.02em">${site.nom}</span>
-      <span style="color:#ff6b2b">.</span>
+      <span style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:17px;font-weight:600">${site.nom}</span>
+      <span style="display:block;width:48px;height:3px;background:#0b4f9e;margin-top:8px"></span>
     </td></tr>
     <tr><td style="padding:28px">
       <h1 style="margin:0 0 16px;font-size:20px;line-height:1.3">${titre}</h1>
@@ -51,7 +51,7 @@ function recapitulatif(devis: Devis): string {
 }
 
 function bouton(url: string, libelle: string): string {
-  return `<a href="${echapper(url)}" style="display:inline-block;background:#ff6b2b;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:600;font-size:14px">${echapper(libelle)}</a>`;
+  return `<a href="${echapper(url)}" style="display:inline-block;background:#0b4f9e;color:#fff;text-decoration:none;padding:12px 20px;border-radius:2px;font-weight:600;font-size:14px">${echapper(libelle)}</a>`;
 }
 
 export function urlSuivi(token: string): string {
@@ -79,7 +79,7 @@ export async function envoyerConfirmationClient(devis: Devis): Promise<boolean> 
        <p style="font-size:13px;line-height:1.6;color:#777">
          Vous pouvez aussi retrouver toutes vos demandes au même endroit en vous
          connectant avec cette adresse email, sans mot de passe :
-         <a href="${echapper(site.url)}/connexion" style="color:#ff6b2b">${echapper(site.url)}/connexion</a>
+         <a href="${echapper(site.url)}/connexion" style="color:#0b4f9e">${echapper(site.url)}/connexion</a>
        </p>`,
     ),
   });

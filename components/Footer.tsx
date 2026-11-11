@@ -13,10 +13,8 @@ export async function Footer() {
     <footer className="mt-24 border-t border-border bg-surface">
       <div className="conteneur grid gap-10 py-14 sm:grid-cols-2 lg:grid-cols-4">
         <div>
-          <p className="font-display text-lg font-bold">
-            {site.nom}
-            <span className="text-accent">.</span>
-          </p>
+          <p className="font-mono text-base font-semibold">{site.nom}</p>
+          <span className="mt-2 block h-[3px] w-12 bg-accent" />
           <p className="mt-3 text-sm leading-relaxed text-muted">{site.baseline}</p>
         </div>
 
