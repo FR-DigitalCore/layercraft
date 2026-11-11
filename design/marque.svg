@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="LayerCraft">
+  <rect x="4" y="4" width="112" height="112" fill="#eef0f1" stroke="#15181b" stroke-width="7"/>
+  <path d="M34 24h52l-11 30H45z" fill="none" stroke="#15181b" stroke-width="7" stroke-linejoin="miter"/>
+  <path d="M53 54h14v9H53z" fill="#15181b"/>
+  <text x="60" y="95" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="30" font-weight="600" fill="#0b4f9e" text-anchor="middle">LC</text>
+  <path d="M32 106h56" stroke="#15181b" stroke-width="7" stroke-linecap="square"/>
+</svg>
