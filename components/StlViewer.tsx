@@ -55,7 +55,7 @@ export default function StlViewer({ url }: { url: string }) {
         geo.computeVertexNormals();
 
         materiau = new THREE.MeshStandardMaterial({
-          color: 0xff6b2b,
+          color: 0x0b4f9e,
           metalness: 0.1,
           roughness: 0.65,
           flatShading: false,
@@ -125,7 +125,7 @@ export default function StlViewer({ url }: { url: string }) {
   }, [url]);
 
   return (
-    <div className="relative overflow-hidden rounded-xl border border-border bg-surface-haut">
+    <div className="relative overflow-hidden rounded-sm border border-border bg-surface-haut">
       <div ref={conteneur} className="h-72 w-full" />
 
       {chargement && !erreur && (

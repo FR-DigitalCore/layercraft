@@ -189,7 +189,7 @@ export function TarifsForm({ grilleInitiale }: { grilleInitiale: GrilleTarifaire
                 <label
                   key={mode}
                   className={cn(
-                    "cursor-pointer rounded-xl border p-4 transition-colors",
+                    "cursor-pointer rounded-sm border p-4 transition-colors",
                     actif
                       ? "border-accent bg-accent/5"
                       : "border-border bg-surface hover:border-muted/60",
@@ -206,7 +206,7 @@ export function TarifsForm({ grilleInitiale }: { grilleInitiale: GrilleTarifaire
                   <span className="flex flex-wrap items-center gap-2">
                     <span className="font-semibold">{infos.titre}</span>
                     {infos.besoinVolume && (
-                      <span className="rounded-full border border-border px-2 py-0.5 text-[0.7rem] text-muted">
+                      <span className="rounded-sm border border-border px-2 py-0.5 text-[0.7rem] text-muted">
                         utilise le volume du STL
                       </span>
                     )}
@@ -638,7 +638,7 @@ export function TarifsForm({ grilleInitiale }: { grilleInitiale: GrilleTarifaire
                   <span className="text-sm font-medium">{MODE_INFOS[mode].titre}</span>
                   <span
                     className={cn(
-                      "font-display text-xl font-bold tabular-nums",
+                      "font-mono text-xl font-bold tabular-nums",
                       actif ? "text-accent" : "text-text",
                     )}
                   >

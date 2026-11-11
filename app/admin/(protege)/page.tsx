@@ -57,7 +57,7 @@ export default async function AdminDashboard({
           Aucune commande pour ce filtre.
         </Card>
       ) : (
-        <div className="mt-8 overflow-x-auto rounded-xl border border-border">
+        <div className="mt-8 overflow-x-auto rounded-sm border border-border">
           <table className="w-full min-w-[52rem] text-sm">
             <thead className="bg-surface text-left text-xs tracking-wide text-muted uppercase">
               <tr>
@@ -148,7 +148,7 @@ function FiltreStatut({
     <Link
       href={href}
       className={cn(
-        "rounded-full border px-3 py-1.5 text-xs transition-colors",
+        "rounded-sm border px-3 py-1.5 text-xs transition-colors",
         actif
           ? "border-accent bg-accent text-white"
           : "border-border bg-surface text-muted hover:text-text",

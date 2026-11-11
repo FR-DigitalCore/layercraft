@@ -34,7 +34,7 @@ export default async function DevisPage() {
       />
       <Suspense
         fallback={
-          <div className="mt-10 h-96 animate-pulse rounded-xl border border-border bg-surface" />
+          <div className="mt-10 h-96 animate-pulse rounded-sm border border-border bg-surface" />
         }
       >
         <DevisForm

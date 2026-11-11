@@ -38,7 +38,7 @@ import { cn } from "@/lib/cn";
 const StlViewer = dynamic(() => import("@/components/StlViewer"), {
   ssr: false,
   loading: () => (
-    <div className="h-72 animate-pulse rounded-xl border border-border bg-surface-haut" />
+    <div className="h-72 animate-pulse rounded-sm border border-border bg-surface-haut" />
   ),
 });
 
@@ -268,7 +268,7 @@ export function DevisForm({
               onDragLeave={() => setSurvol(false)}
               onDrop={deposer}
               className={cn(
-                "rounded-xl border-2 border-dashed p-8 text-center transition-colors",
+                "rounded-sm border-2 border-dashed p-8 text-center transition-colors",
                 survol ? "border-accent bg-accent/5" : "border-border bg-surface",
               )}
             >
@@ -353,7 +353,7 @@ export function DevisForm({
                     <label
                       key={valeur}
                       className={cn(
-                        "cursor-pointer rounded-xl border p-4 transition-colors",
+                        "cursor-pointer rounded-sm border p-4 transition-colors",
                         actif
                           ? "border-accent bg-accent/5"
                           : "border-border bg-surface hover:border-muted/60",
@@ -367,7 +367,7 @@ export function DevisForm({
                         onChange={() => setMatiere(valeur)}
                         className="sr-only"
                       />
-                      <span className="font-display block font-bold">{infos.titre}</span>
+                      <span className="font-mono block font-bold">{infos.titre}</span>
                       <span className="mt-1 block text-sm leading-relaxed">
                         {infos.resume}
                       </span>
@@ -388,7 +388,7 @@ export function DevisForm({
                     <label
                       key={valeur}
                       className={cn(
-                        "cursor-pointer rounded-xl border p-4 transition-colors",
+                        "cursor-pointer rounded-sm border p-4 transition-colors",
                         actif
                           ? "border-accent bg-accent/5"
                           : "border-border bg-surface hover:border-muted/60",
@@ -578,8 +578,8 @@ export function DevisForm({
       </div>
 
       {/* Récapitulatif */}
-      <aside className="rounded-xl border border-border bg-surface p-6 lg:sticky lg:top-24">
-        <h2 className="font-display text-lg font-bold">Récapitulatif</h2>
+      <aside className="rounded-sm border border-border bg-surface p-6 lg:sticky lg:top-24">
+        <h2 className="font-mono text-lg font-bold">Récapitulatif</h2>
         <dl className="mt-4 space-y-2.5 text-sm">
           <LigneRecap label="Fichier" valeur={fichier?.nom ?? "Sans fichier"} />
           <LigneRecap label="Matière" valeur={MATIERE_INFOS[matiere].titre} />
@@ -633,7 +633,7 @@ export function DevisForm({
 
         <div className="mt-5 border-t border-border pt-5">
           <p className="text-xs text-muted">Estimation indicative</p>
-          <p className="font-display mt-1 text-3xl font-bold text-accent">
+          <p className="font-mono mt-1 text-3xl font-bold text-accent">
             {formatPrix(detail.total + (fraisPort ?? 0))}
           </p>
           <p className="mt-3 text-xs leading-relaxed text-muted">

@@ -9,7 +9,7 @@ export function AvertissementPlaceholders() {
   if (manquants.length === 0) return null;
 
   return (
-    <div className="mt-6 rounded-xl border border-amber-500/40 bg-amber-500/5 p-5">
+    <div className="mt-6 rounded-sm border border-amber-500/40 bg-amber-500/5 p-5">
       <p className="text-sm font-semibold text-amber-400">
         Page incomplète : {manquants.length} information
         {manquants.length > 1 ? "s" : ""} à renseigner avant la mise en ligne.
