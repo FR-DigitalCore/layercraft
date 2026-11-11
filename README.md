@@ -336,6 +336,12 @@ Variante light mode : blanc cassé `#f8f7f5`, texte `#1a1a1a`, accent identique.
 Typo : `IBM Plex Sans` (texte et titres) + `IBM Plex Mono` (étiquettes, chiffres, tableaux). Google Fonts.
 Registre documentaire : fond clair unique, grille apparente, angles francs, pas de thème sombre.
 
+Marque : `design/marque.svg` (complète : en-tête, partages, documents) et
+`design/marque-tampon.svg` (lettres seules, favicon — buse et monogramme
+dans un même carré ne survivent pas sous 32 px). L'en-tête rend le SVG en
+ligne dans `components/Header.tsx` ; les PNG dérivés se régénèrent depuis
+ces deux sources.
+
 Composants à construire avec Tailwind, pas de dépendance UI externe lourde. Radix UI primitives si besoin d'accessibilité (dialog, select, etc.).
 
 ---
