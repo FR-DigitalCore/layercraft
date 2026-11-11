@@ -326,14 +326,15 @@ Palette sobre, technique, crédible :
 --color-bg: #0f0f0f;          /* fond sombre */
 --color-surface: #1a1a1a;
 --color-border: #2a2a2a;
---color-accent: #ff6b2b;      /* orange filament impression */
+--color-accent: #f2a900;      /* ambre — thème sombre */
+--color-accent: #9a6700;      /* ambre assombri — thème clair, contraste AA */
 --color-text: #f0f0f0;
 --color-muted: #888;
 ```
 
 Variante light mode : blanc cassé `#f8f7f5`, texte `#1a1a1a`, accent identique.
 
-Typo : `Inter` (body) + `Space Grotesk` (titres). Google Fonts.
+Typo : `Inter` (body) + `Outfit` (titres). Google Fonts.
 
 Composants à construire avec Tailwind, pas de dépendance UI externe lourde. Radix UI primitives si besoin d'accessibilité (dialog, select, etc.).
 

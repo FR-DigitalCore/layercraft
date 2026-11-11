@@ -7,7 +7,7 @@ type Taille = "sm" | "md" | "lg";
 
 const VARIANTES: Record<Variante, string> = {
   primaire:
-    "bg-accent text-white hover:bg-accent-doux disabled:hover:bg-accent shadow-sm",
+    "bg-accent text-sur-accent hover:bg-accent-doux disabled:hover:bg-accent shadow-sm",
   secondaire:
     "bg-surface-haut text-text border border-border hover:border-accent/50",
   fantome: "text-muted hover:text-text hover:bg-surface-haut",

@@ -6,8 +6,11 @@
   --surface: #1a1a1a;
   --surface-haut: #202020;
   --border: #2a2a2a;
-  --accent: #ff6b2b;
-  --accent-doux: #ff8a55;
+  --accent: #f2a900;
+  --accent-doux: #ffc23d;
+  /* Couleur du texte posé SUR l'accent. L'ambre est clair : du blanc dessus
+     tomberait à 2:1. Elle s'inverse donc d'un thème à l'autre. */
+  --sur-accent: #0f0f0f;
   --text: #f0f0f0;
   --muted: #888888;
 }
@@ -18,8 +21,11 @@
     --surface: #ffffff;
     --surface-haut: #f2f0ec;
     --border: #e2dfd9;
-    --accent: #ff6b2b;
-    --accent-doux: #e0551a;
+    /* Ambre assombri : à #f2a900, du texte sur ce fond crème tombe à
+       1,9:1. Cette teinte-ci tient 4,6:1. */
+    --accent: #9a6700;
+    --accent-doux: #7d5300;
+    --sur-accent: #ffffff;
     --text: #1a1a1a;
     --muted: #6b6b6b;
   }
@@ -32,11 +38,12 @@
   --color-border: var(--border);
   --color-accent: var(--accent);
   --color-accent-doux: var(--accent-doux);
+  --color-sur-accent: var(--sur-accent);
   --color-text: var(--text);
   --color-muted: var(--muted);
 
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-space-grotesk), var(--font-inter), sans-serif;
+  --font-display: var(--font-outfit), var(--font-inter), sans-serif;
 }
 
 @layer base {
@@ -58,13 +65,13 @@
   h1,
   h2,
   h3 {
-    font-family: var(--font-space-grotesk), var(--font-inter), sans-serif;
+    font-family: var(--font-outfit), var(--font-inter), sans-serif;
     letter-spacing: -0.02em;
   }
 
   ::selection {
     background-color: var(--accent);
-    color: #ffffff;
+    color: var(--sur-accent);
   }
 
   :focus-visible {

@@ -55,7 +55,7 @@ export default function StlViewer({ url }: { url: string }) {
         geo.computeVertexNormals();
 
         materiau = new THREE.MeshStandardMaterial({
-          color: 0xff6b2b,
+          color: 0xf2a900,
           metalness: 0.1,
           roughness: 0.65,
           flatShading: false,
