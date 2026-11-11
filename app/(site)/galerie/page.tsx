@@ -3,6 +3,7 @@ import { listerRealisations, tagsUniques } from "@/lib/realisations";
 import { GalerieGrid } from "@/components/GalerieGrid";
 import { TitreSection } from "@/components/ui/Card";
 import { ButtonLink } from "@/components/ui/Button";
+import { JsonLdFilAriane } from "@/components/JsonLd";
 
 export const metadata: Metadata = {
   title: "Réalisations",
@@ -18,6 +19,8 @@ export default async function GaleriePage() {
   const tags = tagsUniques(realisations);
 
   return (
+    <>
+    <JsonLdFilAriane elements={[{ nom: "Réalisations", chemin: "/galerie" }]} />
     <div className="conteneur py-16">
       <TitreSection
         surtitre="Galerie"
@@ -38,5 +41,6 @@ export default async function GaleriePage() {
         </div>
       )}
     </div>
+    </>
   );
 }
