@@ -9,7 +9,8 @@
   --surface-haut: #e4e7e9;
   --border: #c9cdd1;
   --border-fort: #9aa2a9;
-  --trame-ligne: #dfe3e5;
+  --trame-fine: #e4e8ea;
+  --trame-forte: #d2d8dc;
   --accent: #0b4f9e;
   --accent-doux: #083c78;
   --text: #15181b;
@@ -95,12 +96,15 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Trame de fond : une grille fine, visible sans être bruyante. Remplace le
-   dégradé lumineux de l'ancienne maquette. */
+/* Trame de fond, façon papier millimétré : carreaux fins tous les 8 px,
+   trait fort tous les cinq carreaux. En gris-bleu et non dans l'orange du
+   papier français, qui est précisément la teinte dont on s'éloigne. */
 @utility trame {
   background-image:
-    linear-gradient(to right, var(--trame-ligne) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--trame-ligne) 1px, transparent 1px);
-  background-size: 2.75rem 2.75rem;
+    linear-gradient(to right, var(--trame-forte) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--trame-forte) 1px, transparent 1px),
+    linear-gradient(to right, var(--trame-fine) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--trame-fine) 1px, transparent 1px);
+  background-size: 2.5rem 2.5rem, 2.5rem 2.5rem, 0.5rem 0.5rem, 0.5rem 0.5rem;
   background-position: -1px -1px;
 }
