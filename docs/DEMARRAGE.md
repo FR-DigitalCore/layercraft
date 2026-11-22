@@ -278,6 +278,22 @@ DATABASE_URL="postgresql://user:MOTDEPASSE@127.0.0.1:5432/impression3d" \
   npx prisma migrate deploy
 ```
 
+### Mode maintenance
+
+`MAINTENANCE=1` dans le `.env` du serveur remplace toutes les pages
+publiques par `/maintenance`. L'administration, les routes d'API et les
+fichiers servis restent accessibles, pour continuer à traiter les devis
+en cours.
+
+```bash
+echo 'MAINTENANCE=1' >> .env
+docker compose up -d --force-recreate app
+```
+
+Pour rallumer le site, retirer la ligne et relancer la même commande. La
+bascule est lue par le middleware à chaque requête : un redémarrage du
+conteneur suffit, aucune reconstruction d'image n'est nécessaire.
+
 ### Mise à jour
 
 Automatique : tout `push` sur `main` déclenche le workflow
