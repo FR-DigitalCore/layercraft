@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { site } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Site en cours de refonte",
@@ -44,10 +45,10 @@ export default function MaintenancePage() {
         <p className="mt-8 text-sm leading-relaxed text-muted">
           Un projet, une question, un devis déjà déposé ? Écrivez à{" "}
           <a
-            href="mailto:devis@layercraft.fr"
+            href={`mailto:${site.email}`}
             className="font-medium text-accent hover:underline"
           >
-            devis@layercraft.fr
+            {site.email}
           </a>
           , les messages sont relevés.
         </p>

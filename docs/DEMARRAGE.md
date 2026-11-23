@@ -101,6 +101,13 @@ galerie affiche alors le visuel de repli. Téléversez de vraies photos depuis
 
 ## Déploiement VPS
 
+> **Noms internes.** Les conteneurs, le volume de données, le réseau Docker
+> et le dossier du serveur portent encore `layercraft`, nom du projet à sa
+> création. Ce sont des identifiants techniques, invisibles des clients, et
+> les renommer imposerait de recréer les volumes et de reprendre la
+> configuration du reverse proxy. À faire en une fois, lors d'une fenêtre
+> de maintenance, pas au fil de l'eau.
+
 Deux domaines sont nécessaires : l'application et un sous-domaine pour les
 fichiers. Les presigned URLs sont signées sur le domaine public et la signature
 couvre l'en-tête `Host` — sans ce sous-domaine, les aperçus STL et les images
