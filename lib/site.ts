@@ -3,11 +3,11 @@
  * zone desservie. Repris dans le footer, les emails, le SEO et le JSON-LD.
  */
 export const site = {
-  nom: "Stratis 3D",
+  nom: "DigitalCore",
   baseline: "Impression 3D sur mesure, partout en France",
   description:
     "Service d'impression 3D en ligne : devis immédiat, conseil technique, conception et impression de pièces sur mesure en PLA, PETG, ASA et TPU. Livraison partout en France.",
-  email: "devis@stratis3d.fr",
+  email: "devis@digitalcore.fr",
   telephone: "+33 7 82 49 87 35",
   adresse: {
     rue: "235 chemin de Bezaton",

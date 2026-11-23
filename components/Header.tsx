@@ -33,7 +33,7 @@ export function Header() {
               fill="#0b4f9e"
               textAnchor="middle"
             >
-              S3
+              DC
             </text>
             <path d="M32 106h56" stroke="#15181b" strokeWidth="7" strokeLinecap="square" />
           </svg>
